@@ -1,0 +1,549 @@
+/* 班级量化管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 */
+* {
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: 'Microsoft YaHei', sans-serif;
+    background: #0b1a2a;
+    color: #fff;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+.pet-app {
+    width: 100%;
+    max-width: 1400px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.04);
+    border-radius: 24px;
+    padding: 16px 20px 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+    position: relative;
+}
+.pet-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 14px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+}
+.pet-title {
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.pet-count {
+    font-size: 14px;
+    color: #aaa;
+}
+.pet-back-btn {
+    background: #2ecc71;
+    border: 1px solid #2ecc71;
+    color: #fff;
+    padding: 6px 18px;
+    border-radius: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.pet-back-btn:hover {
+    transform: scale(1.05);
+    background: #27ae60;
+}
+
+/* ===== 操场容器 ===== */
+.pet-park {
+    flex: 1;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #3a8c3a;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.2);
+}
+.pet-park::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(255,255,255,0.02) 0px,
+        rgba(255,255,255,0.02) 20px,
+        rgba(0,0,0,0.02) 20px,
+        rgba(0,0,0,0.02) 40px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+.pet-park .track {
+    position: absolute;
+    top: 15%;
+    left: 10%;
+    width: 80%;
+    height: 70%;
+    border: 10px solid rgba(180, 150, 130, 0.5);
+    border-radius: 50%;
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 2;
+}
+.pet-park .track::after {
+    content: '';
+    position: absolute;
+    top: 8%;
+    left: 8%;
+    width: 84%;
+    height: 84%;
+    border: 2px dashed rgba(255,255,255,0.2);
+    border-radius: 50%;
+}
+.pet-park .football-field {
+    position: absolute;
+    top: 30%;
+    left: 25%;
+    width: 50%;
+    height: 40%;
+    border: 2px solid rgba(255,255,255,0.4);
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 2;
+}
+.pet-park .football-field::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30%;
+    height: 60%;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+.pet-park .football-field::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 100%;
+    background: rgba(255,255,255,0.4);
+    transform: translateX(-50%);
+}
+.pet-park .flag-area {
+    position: absolute;
+    top: 5%;
+    left: 4%;
+    z-index: 3;
+    pointer-events: none;
+}
+.pet-park .flag-pole {
+    width: 4px;
+    height: 70px;
+    background: #aaa;
+    margin: 0 auto;
+    border-radius: 2px;
+    position: relative;
+}
+.pet-park .flag-pole::after {
+    content: '🇨🇳';
+    position: absolute;
+    top: -6px;
+    left: 6px;
+    font-size: 28px;
+    line-height: 1;
+}
+.pet-park .flag-base {
+    width: 20px;
+    height: 5px;
+    background: #999;
+    border-radius: 3px;
+    margin: -2px auto 0;
+}
+.pet-park .tree {
+    position: absolute;
+    font-size: 26px;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.85;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* ===== 宠物卡片 ===== */
+.pet-card {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 90px;
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    transition: transform 0.1s;
+    cursor: default;
+    will-change: transform, left, top;
+    touch-action: none;
+    z-index: 10;
+}
+.pet-card:hover {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 8px rgba(255,215,0,0.3));
+}
+.pet-card .pet-emoji {
+    font-size: 20px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.2));
+    transition: font-size 0.3s ease;
+}
+.pet-card .pet-name {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: rgba(0,0,0,0.6);
+    padding: 1px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,215,0,0.2);
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+}
+.pet-card .badge {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(0,0,0,0.7);
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+}
+.pet-card .badge.top-left { top: -6px; left: -6px; }
+.pet-card .badge.top-right { top: -6px; right: -6px; border-radius: 10px; width: auto; padding: 0 6px; font-size: 9px; background: rgba(255,215,0,0.3); border-color: #ffd700; }
+.pet-card .badge.bottom-left { bottom: -6px; left: -6px; background: rgba(0,0,0,0.6); border-color: #ff6b6b; }
+.pet-card .badge.bottom-right { bottom: -6px; right: -6px; font-size: 12px; background: transparent; border: none; backdrop-filter: none; }
+/* 排号颜色：1白，2红，3橙，4黄，5绿，6蓝，7青，8紫，9黑 */
+.pet-card .badge.color-1 { color: #ffffff; border-color: #ffffff; background: transparent; }
+.pet-card .badge.color-2 { color: #E53935; border-color: #E53935; background: transparent; }
+.pet-card .badge.color-3 { color: #FF9100; border-color: #FF9100; background: transparent; }
+.pet-card .badge.color-4 { color: #FFEA00; border-color: #FFEA00; background: transparent; }
+.pet-card .badge.color-5 { color: #00E676; border-color: #00E676; background: transparent; }
+.pet-card .badge.color-6 { color: #2979FF; border-color: #2979FF; background: transparent; }
+.pet-card .badge.color-7 { color: #00BCD4; border-color: #00BCD4; background: transparent; }
+.pet-card .badge.color-8 { color: #8E24AA; border-color: #8E24AA; background: transparent; }
+.pet-card .badge.color-9 { color: #000000; border-color: #000000; background: transparent; }
+.pet-card.champion {
+    animation: champGlow 1.5s ease-in-out infinite;
+}
+@keyframes champGlow {
+    0%,100% { filter: drop-shadow(0 0 4px rgba(255,215,0,0.2)); }
+    50% { filter: drop-shadow(0 0 18px rgba(255,215,0,0.8)); }
+}
+
+/* 特效 */
+.fx-container { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99999; overflow:hidden; }
+.float-toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.8); font-size:48px; font-weight:900; color:#ffd700; z-index:99997; pointer-events:none; opacity:0; text-shadow:0 0 40px rgba(255,215,0,0.3); transition:all 0.3s ease; }
+.float-toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+.float-toast.hide { opacity:0; transform:translate(-50%,-70%) scale(1.2); }
+.collision-pulse {
+    animation: pulse 0.3s ease-out;
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+/* ===== 滑块容器（固定定位，左右两侧空白区域） ===== */
+#speedSliderContainer,
+#sizeSliderContainer {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 9998;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.7);
+    padding: 16px 8px;
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    height: 320px;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+#speedSliderContainer {
+    left: 12px;
+}
+#sizeSliderContainer {
+    right: 12px;
+}
+
+#speedSliderContainer input[type="range"],
+#sizeSliderContainer input[type="range"] {
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    width: 30px;
+    height: 220px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    accent-color: #ffd700;
+    touch-action: none;
+    cursor: pointer;
+}
+#speedSliderContainer input[type="range"]::-webkit-slider-thumb,
+#sizeSliderContainer input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background: #ffd700;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(255,215,0,0.4);
+}
+#speedSliderContainer input[type="range"]::-moz-range-thumb,
+#sizeSliderContainer input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background: #ffd700;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#speedSliderContainer span,
+#sizeSliderContainer span {
+    color: #aaa;
+    font-size: 12px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+#speedLabel, #sizeLabel {
+    font-size: 16px !important;
+    color: #ffd700 !important;
+    min-width: 32px;
+    text-align: center;
+}
+
+/* 响应式：小屏幕下调小滑块尺寸 */
+@media (max-width: 700px) {
+    #speedSliderContainer, #sizeSliderContainer {
+        height: 260px;
+        padding: 12px 6px;
+    }
+    #speedSliderContainer input[type="range"],
+    #sizeSliderContainer input[type="range"] {
+        height: 180px;
+        width: 24px;
+    }
+    #speedSliderContainer {
+        left: 6px;
+    }
+    #sizeSliderContainer {
+        right: 6px;
+    }
+}
+@media (max-width: 480px) {
+    #speedSliderContainer, #sizeSliderContainer {
+        height: 200px;
+        padding: 10px 4px;
+    }
+    #speedSliderContainer input[type="range"],
+    #sizeSliderContainer input[type="range"] {
+        height: 140px;
+        width: 20px;
+    }
+    #speedSliderContainer {
+        left: 4px;
+    }
+    #sizeSliderContainer {
+        right: 4px;
+    }
+}
+/* 物品轨迹粒子 */
+.trail-particle {
+    animation: trailFade 0.8s ease-out forwards;
+}
+@keyframes trailFade {
+    0% { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.3) translateY(-20px); }
+}
+/* ===== 斗蛐蛐模式面板 ===== */
+.battle-panel {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+    background: rgba(10,20,35,0.92);
+    backdrop-filter: blur(12px);
+    border-radius: 12px;
+    padding: 10px;
+    border: 1px solid rgba(255,215,0,0.15);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    max-height: 70vh;
+    overflow-y: auto;
+    font-size: 11px;
+    color: #ccc;
+    width: 150px;
+}
+.attr-panel { left: 8px; }
+.stat-panel { right: 8px; width: 150px; }
+.panel-title { font-size: 12px; font-weight:700; color:#ffd700; text-align:center; margin-bottom:6px; border-bottom:1px solid rgba(255,215,0,0.15); padding-bottom:4px; }
+
+/* 血条蓝条（卡片内） */
+.pet-card .hp-bar-wrap, .pet-card .mana-bar-wrap {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.6);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    pointer-events: none;
+    z-index: 12;
+}
+.pet-card .hp-bar-wrap { bottom: -14px; height: 3px; }
+.pet-card .mana-bar-wrap { bottom: -19px; height: 2px; }
+.pet-card .hp-bar { height:100%; background:#2ecc71; transition:width 0.3s; border-radius:2px; }
+.pet-card .mana-bar { height:100%; background:#3498db; transition:width 0.3s; border-radius:2px; }
+
+/* 伤害数字、技能特效 */
+.battle-damage {
+    position: absolute;
+    font-weight: 900;
+    text-shadow: 0 0 12px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 50;
+    animation: damageFloat 1.2s ease-out forwards;
+    font-size: 14px;
+}
+@keyframes damageFloat {
+    0% { opacity:1; transform: translateY(0) scale(1); }
+    100% { opacity:0; transform: translateY(-50px) scale(1.2); }
+}
+.skill-effect {
+    position: absolute;
+    pointer-events: none;
+    z-index: 45;
+    animation: skillPulse 0.8s ease-out forwards;
+    text-shadow: 0 0 30px rgba(255,215,0,0.6);
+    font-size: 24px;
+}
+@keyframes skillPulse {
+    0% { transform: scale(0.5); opacity:1; }
+    50% { transform: scale(1.5); opacity:0.8; }
+    100% { transform: scale(0.8); opacity:0; }
+}
+/* 定身图标 */
+.stun-icon {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    animation: stunPulse 0.6s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 14;
+}
+@keyframes stunPulse {
+    0% { transform: translateX(-50%) scale(0.8); opacity:0.5; }
+    100% { transform: translateX(-50%) scale(1.2); opacity:1; }
+}
+/* 选中状态 */
+.pet-card.selected {
+    outline: 3px solid #ffd700;
+    outline-offset: 4px;
+    border-radius: 12px;
+    z-index: 20;
+}
+
+/* 属性面板内部样式 */
+.pet-block { border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px; margin-bottom:6px; }
+.pet-block .pet-header { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.pet-block .pet-header .avatar { font-size:20px; line-height:1; }
+.pet-block .pet-header .pname { font-size:12px; font-weight:700; color:#fff; }
+.pet-block .pet-header .pgroup { font-size:9px; color:#888; }
+.pet-block .attr-row { display:flex; justify-content:space-between; padding:1px 0; font-size:9px; border-bottom:1px solid rgba(255,255,255,0.02); }
+.pet-block .attr-row .label { color:#999; }
+.pet-block .attr-row .value { color:#fff; font-weight:600; }
+.pet-block .attr-row .value.banned { color:#e74c3c; font-weight:700; }
+.pet-block .skill-cd { display:flex; align-items:center; gap:6px; margin-top:3px; font-size:9px; color:#888; }
+.pet-block .skill-cd .cd-bar-wrap { flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
+.pet-block .skill-cd .cd-bar { height:100%; border-radius:3px; transition:width 0.3s; }
+.pet-block .kills-list { font-size:9px; color:#888; margin-top:4px; border-top:1px solid rgba(255,255,255,0.04); padding-top:4px; }
+.pet-block .kills-list .kill-item { display:inline-block; background:rgba(255,215,0,0.1); padding:0 6px; border-radius:10px; margin:1px 2px 1px 0; font-size:8px; color:#ffd700; }
+.pet-block .status-tag { display:inline-block; font-size:8px; padding:0 6px; border-radius:10px; margin-left:4px; }
+.pet-block .status-tag.stunned { background:rgba(0,150,255,0.3); color:#00bfff; }
+.pet-block .status-tag.regen { background:rgba(46,204,113,0.3); color:#2ecc71; }
+.pet-block .status-tag.lifesteal { background:rgba(46,204,113,0.3); color:#2ecc71; }
+
+/* 小组面板 */
+.group-block { margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:6px; }
+.group-block .group-name { font-size:11px; font-weight:600; color:#ffd700; margin-bottom:4px; }
+.group-block .member-item { display:flex; justify-content:space-between; font-size:10px; padding:1px 0; border-bottom:1px solid rgba(255,255,255,0.02); }
+.group-block .member-item .mname { color:#ccc; }
+.group-block .member-item .mhp { color:#aaa; }
+.group-block .member-item.dead .mname { color:#555; }
+.group-block .member-item.dead .mhp { color:#444; }
+.group-block .member-item .mhp .hp-bar-mini { display:inline-block; width:30px; height:4px; background:#333; border-radius:2px; margin-left:4px; overflow:hidden; vertical-align:middle; }
+.group-block .member-item .mhp .hp-bar-mini .fill { height:100%; background:#2ecc71; border-radius:2px; transition:width 0.2s; }
+
+/* 战斗胜利横幅 */
+.battle-victory-banner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    padding: 30px 50px;
+    border-radius: 24px;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 60px rgba(255,215,0,0.3);
+    z-index: 100;
+    pointer-events: auto;
+    text-align: center;
+    min-width: 300px;
+    color: #fff;
+}
+.battle-victory-banner .winner { font-size:36px; font-weight:900; color:#ffd700; text-shadow:0 0 40px rgba(255,215,0,0.4); }
+.battle-victory-banner .sub { font-size:16px; color:#aaa; margin-top:8px; }
+.battle-victory-banner button { background:#ffd700; color:#000; border:none; padding:8px 24px; border-radius:30px; font-weight:700; font-size:16px; cursor:pointer; margin-top:16px; }

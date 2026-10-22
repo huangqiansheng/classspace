@@ -1,0 +1,2478 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>🏪 兑换商店</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #0b1120; color: #e2e8f0; min-height: 100vh; padding: 16px; font-size: 15px; line-height: 1.7; }
+        .app { max-width: 1300px; margin: 0 auto; background: rgba(255,255,255,0.02);
+            border-radius: 24px; padding: 20px 24px 28px; border: 1px solid rgba(255,255,255,0.06); }
+        .header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+            margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .header h1 { font-size: 24px; font-weight: 700;
+            background: linear-gradient(135deg, #fbbf24, #f472b6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+        .header .info { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .badge { font-size: 12px; padding: 3px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; color: #94a3b8; }
+        .badge strong { color: #fbbf24; }
+        .header .back-link { margin-left: auto; display: flex; align-items: center; opacity: 0.8; }
+        .header .back-link img { width: 34px; height: 34px; }
+        .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+        .filter-group { display: flex; gap: 3px; background: rgba(0,0,0,0.3);
+            padding: 3px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.06); }
+        .filter-group button { padding: 6px 16px; border: none; border-radius: 30px;
+            background: transparent; color: #64748b; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit; }
+        .filter-group button.active { background: rgba(99,102,241,0.25); color: #c7d2fe; }
+        .btn { padding: 7px 18px; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; background: rgba(255,255,255,0.04);
+            color: #cbd5e1; font-size: 13px; font-weight: 600;
+            cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 5px; }
+        .btn:hover { background: rgba(255,255,255,0.08); }
+        .btn-primary { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.4); color: #c7d2fe; }
+        .btn-danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #fca5a5; }
+        .btn-success { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.35); color: #6ee7b7; }
+        .btn-info { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.35); color: #93c5fd; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+        .item-card { position: relative; background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 16px;
+            padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .item-card.special { border-color: rgba(251,191,36,0.35);
+            background: linear-gradient(135deg, rgba(251,191,36,0.08), rgba(244,114,182,0.05)); }
+        .item-card.special::before { content: '内置'; position: absolute; top: 8px; right: -22px;
+            background: #fbbf24; color: #0b1120; font-size: 10px; font-weight: 700;
+            padding: 2px 26px; transform: rotate(35deg); }
+        .item-card .emoji { font-size: 42px; line-height: 1; }
+        .item-card .name { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+        .item-card .desc { font-size: 12px; color: #64748b; min-height: 18px; }
+        .item-card .pay-groups { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+        .item-card .pay-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+            padding: 5px 8px; background: rgba(255,255,255,0.03);
+            border-radius: 6px; border-left: 3px solid #fbbf24; }
+        .item-card .pay-main { font-size: 12.5px; color: #fbbf24; font-weight: 600;
+            display: flex; align-items: center; gap: 3px; }
+        .item-card .pay-fb { font-size: 11px; color: #a5b4fc; margin-left: 4px; }
+        .item-card .pay-fb::before { content: '↳'; margin-right: 3px; }
+        .item-card .stock { font-size: 11px; color: #64748b; }
+        .item-card .stock.low { color: #f59e0b; }
+        .item-card .stock.out { color: #ef4444; }
+        .item-card .actions { display: flex; gap: 6px; margin-top: 8px; }
+        .item-card .actions button { flex: 1; padding: 6px 10px; border-radius: 10px;
+            font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; border: 1px solid; }
+        .item-card .btn-exchange { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.35); color: #6ee7b7; }
+        .item-card .btn-exchange:disabled { opacity: 0.35; cursor: not-allowed; }
+        .item-card .btn-edit { flex: 0 0 auto; width: 34px; background: transparent;
+            border-color: rgba(255,255,255,0.08); color: #94a3b8; }
+        .empty-tip { text-align: center; padding: 60px 20px; color: #475569; line-height: 2; }
+        .empty-tip .big { font-size: 48px; display: block; margin-bottom: 12px; opacity: 0.6; }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px); align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px; }
+        .modal.open { display: flex; }
+        .modal-box { background: #0f172a; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px; padding: 24px; width: 100%; max-width: 560px;
+            max-height: 90vh; overflow-y: auto; }
+        .modal-box.wide { max-width: 1080px; }
+        #itemModal .modal-box { max-width: 780px; }
+        .modal-box h3 { font-size: 17px; margin-bottom: 18px; color: #f1f5f9;
+            font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .modal-box h3 .close { margin-left: auto; background: transparent; border: none;
+            color: #64748b; cursor: pointer; font-size: 20px; padding: 0 4px; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 12.5px; color: #94a3b8; margin-bottom: 6px; font-weight: 500; }
+        .field input, .field textarea, .field select { width: 100%; padding: 9px 12px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+            color: #f1f5f9; border-radius: 9px; outline: none; font-size: 14px; font-family: inherit; }
+        .field textarea { resize: vertical; min-height: 60px; }
+        .field select option { background: #0f172a; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+        .emoji-search { width: 100%; padding: 9px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1); color: #f1f5f9;
+            border-radius: 9px; outline: none; font-size: 14px; font-family: inherit; margin-bottom: 8px; }
+        .emoji-cats { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+        .emoji-cats button { font-size: 12px; padding: 4px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; color: #94a3b8;
+            cursor: pointer; font-family: inherit; transition: 0.15s; }
+        .emoji-cats button.active { background: rgba(99,102,241,0.25); border-color: rgba(99,102,241,0.5); color: #c7d2fe; }
+        .emoji-picker { display: grid; grid-template-columns: repeat(12, 1fr);
+            gap: 4px; padding: 8px; background: rgba(0,0,0,0.25);
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);
+            max-height: 88px; overflow-y: auto; }
+        .emoji-picker button { background: transparent; border: 2px solid transparent;
+            border-radius: 6px; font-size: 20px; padding: 2px; cursor: pointer;
+            line-height: 1; transition: 0.15s; }
+        .emoji-picker button:hover { background: rgba(255,255,255,0.08); }
+        .emoji-picker button.selected { border-color: #fbbf24; background: rgba(251,191,36,0.2); }
+        .emoji-empty { grid-column: 1 / -1; text-align: center; color: #475569;
+            font-size: 12px; padding: 20px 0; }
+        .payment-groups { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; width: 100%; }
+        .payment-group { flex: 1 1 320px; min-width: 0; background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+            padding: 14px 10px 10px; position: relative; box-sizing: border-box; }
+        .payment-group .pg-title { font-size: 10px; color: #64748b; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 4px; }
+        .payment-group .pg-title .num { background: rgba(99,102,241,0.3);
+            color: #c7d2fe; padding: 1px 6px; border-radius: 8px; font-weight: 700; }
+        .pg-row { display: flex; align-items: center; gap: 5px; margin-bottom: 6px; }
+        .pg-row:last-child { margin-bottom: 0; }
+        .pg-row.pg-main { background: rgba(251,191,36,0.06);
+            padding: 6px; border-radius: 6px; border-left: 3px solid #fbbf24; }
+        .pg-row.pg-fallback { background: rgba(99,102,241,0.06);
+            padding: 6px; border-radius: 6px; border-left: 3px solid #6366f1;
+            margin-left: 14px; position: relative; }
+        .pg-row.pg-fallback::before { content: '↳'; position: absolute; left: -16px;
+            color: #a5b4fc; font-size: 14px; top: 50%; transform: translateY(-50%); }
+        .pg-row .pg-label { font-size: 11px; color: #94a3b8; min-width: 32px; flex-shrink: 0; }
+        .pg-row select { padding: 4px 6px; font-size: 12.5px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #f1f5f9; border-radius: 5px; outline: none; font-family: inherit; min-width: 0; }
+        .pg-row select option { background: #0f172a; color: #f1f5f9; }
+        .pg-row .pg-type-select { flex: 0 0 auto; width: 82px; }
+        .pg-row .pg-currency-select { flex: 1 1 0; min-width: 0; }
+        .pg-row .pg-cost { flex: 0 0 auto; width: 58px; padding: 4px 6px; font-size: 12.5px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #f1f5f9; border-radius: 5px; outline: none; font-family: inherit; text-align: center; }
+        .pg-row .pg-fb-toggle { padding: 4px 10px; font-size: 11.5px;
+            background: rgba(99,102,241,0.15);
+            border: 1px dashed rgba(99,102,241,0.4);
+            color: #c7d2fe; border-radius: 6px; cursor: pointer;
+            font-family: inherit; flex: 1; }
+        .pg-row .pg-fb-toggle:hover { background: rgba(99,102,241,0.25); }
+        .pg-row .pg-fb-del { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5; border-radius: 5px; width: 24px; height: 24px;
+            cursor: pointer; font-size: 12px; padding: 0; flex-shrink: 0; }
+        .pg-del { position: absolute; top: 8px; right: 8px;
+            background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5; border-radius: 5px; width: 22px; height: 22px;
+            cursor: pointer; font-size: 11px; padding: 0; line-height: 1; }
+        .pg-del:hover { background: rgba(239,68,68,0.3); }
+        .payment-tip { font-size: 11.5px; color: #64748b; line-height: 1.7; margin-top: 8px; }
+        .student-search { width: 100%; padding: 9px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1); color: #f1f5f9;
+            border-radius: 9px; outline: none; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+        .sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .sort-bar .label { font-size: 12px; color: #64748b; }
+        .sort-group { display: flex; gap: 3px; background: rgba(0,0,0,0.3);
+            padding: 3px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.06); }
+        .sort-group button { padding: 4px 12px; border: none; border-radius: 20px;
+            background: transparent; color: #64748b; font-size: 12px; font-weight: 600;
+            cursor: pointer; font-family: inherit; }
+        .sort-group button.active { background: rgba(99,102,241,0.25); color: #c7d2fe; }
+        .student-list { max-height: 55vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; background: rgba(0,0,0,0.2); }
+        .student-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .student-row:last-child { border-bottom: none; }
+        .student-row .avatar { font-size: 22px; }
+        .student-row .sname { font-weight: 600; color: #f1f5f9; min-width: 60px; }
+        .student-row .sgroup { font-size: 11px; color: #64748b; background: rgba(255,255,255,0.04);
+            padding: 1px 8px; border-radius: 10px; }
+        .student-row .balance { margin-left: auto; font-size: 13px; color: #94a3b8;
+            display: flex; align-items: center; gap: 4px; cursor: help; }
+        .student-row .balance strong { color: #6ee7b7; font-size: 15px; }
+        .student-row .balance.insufficient strong { color: #ef4444; }
+        .student-row button { padding: 5px 14px; border-radius: 8px;
+            border: 1px solid rgba(16,185,129,0.4);
+            background: rgba(16,185,129,0.15); color: #6ee7b7;
+            font-size: 12.5px; font-weight: 600; font-family: inherit;
+            cursor: pointer; flex-shrink: 0; }
+        .student-row button:disabled { opacity: 0.3; cursor: not-allowed;
+            background: transparent; color: #64748b; border-color: rgba(255,255,255,0.1); }
+        .record-list { max-height: 60vh; overflow-y: auto;
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; background: rgba(0,0,0,0.2); }
+        .record-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
+        .record-row:last-child { border-bottom: none; }
+        .record-row .icon { font-size: 20px; }
+        .record-row .info { flex: 1; }
+        .record-row .info .main strong { color: #f1f5f9; }
+        .record-row .info .time { font-size: 11px; color: #475569; margin-top: 2px; }
+        .record-row .cost { color: #fbbf24; font-weight: 700; font-size: 13px; text-align: right; }
+        .cert-layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+        @media (max-width: 900px) { .cert-layout { grid-template-columns: 1fr; } }
+        .cert-preview-wrap { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px;
+            border: 1px solid rgba(255,255,255,0.06); min-height: 200px; }
+        .cert-preview-wrap canvas { width: 100%; height: auto; display: block;
+            border-radius: 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+        .template-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .template-list button { font-size: 11.5px; padding: 3px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; color: #94a3b8;
+            cursor: pointer; font-family: inherit; }
+        .style-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .style-list button { display: flex; align-items: center; gap: 6px;
+            padding: 8px 10px; background: rgba(255,255,255,0.04);
+            border: 1.5px solid rgba(255,255,255,0.08);
+            border-radius: 10px; color: #94a3b8;
+            font-size: 12.5px; font-weight: 600; font-family: inherit;
+            cursor: pointer; text-align: left; }
+        .style-list button.active { border-color: #fbbf24;
+            background: rgba(251,191,36,0.12); color: #fde68a; }
+        .style-list button .swatch { width: 16px; height: 16px; border-radius: 4px;
+            flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
+        .seal-tip { font-size: 11.5px; color: #64748b; line-height: 1.7;
+            background: rgba(99,102,241,0.06);
+            border: 1px solid rgba(99,102,241,0.15);
+            border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+        .seal-tip strong { color: #a5b4fc; }
+        .seal-tip code { background: rgba(255,255,255,0.08); padding: 1px 5px;
+            border-radius: 3px; font-size: 11px; }
+        .toast { position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(15,23,42,0.96);
+            border: 1px solid rgba(99,102,241,0.4);
+            color: #c7d2fe; padding: 10px 22px;
+            border-radius: 10px; font-size: 13px; font-weight: 500;
+            z-index: 9999; opacity: 0; pointer-events: none;
+            transition: all 0.25s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 90vw; word-break: break-word; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: rgba(16,185,129,0.5); color: #6ee7b7; }
+        .toast.error { border-color: rgba(239,68,68,0.5); color: #fca5a5; }
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            .app { padding: 14px; border-radius: 16px; }
+            .header h1 { font-size: 20px; }
+            .items-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+            .emoji-picker { grid-template-columns: repeat(8, 1fr); }
+            #itemModal .modal-box { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <h1>🏪 兑换商店</h1>
+        <div class="info">
+            <span class="badge" id="classBadge">🏫 班级：<strong>加载中</strong></span>
+            <span class="badge" id="itemCount">0 件商品</span>
+            <span class="badge" id="recordCount">0 条兑换</span>
+        </div>
+        <a href="home.html" class="back-link"><img src="logo.svg" alt="logo"></a>
+    </div>
+
+    <div class="toolbar">
+        <div class="filter-group">
+            <button data-filter="all" class="active">全部</button>
+            <button data-filter="dimension">十维</button>
+            <button data-filter="subject">九科</button>
+        </div>
+        <button class="btn btn-primary" onclick="openItemModal()">+ 新增商品</button>
+        <button class="btn" onclick="openRecordsModal()">📜 兑换记录</button>
+    </div>
+
+    <div class="items-grid" id="itemsGrid"></div>
+</div>
+
+<div class="modal" id="itemModal">
+    <div class="modal-box">
+        <h3>
+            <span id="itemModalTitle">➕ 新增商品</span>
+            <button class="close" onclick="closeItemModal()">✕</button>
+        </h3>
+        <div class="field">
+            <label>商品名称 *</label>
+            <input type="text" id="itemName" placeholder="如：免作业券" maxlength="20">
+        </div>
+        <div class="field">
+            <label>图标</label>
+            <input type="text" class="emoji-search" id="emojiSearch" placeholder="🔍 搜索图标（如：星星、动物、书、奖杯）" oninput="filterEmojis()">
+            <div class="emoji-cats" id="emojiCats"></div>
+            <div class="emoji-picker" id="emojiPicker"></div>
+        </div>
+        <div class="field">
+            <label>说明（可选）</label>
+            <textarea id="itemDesc" placeholder="如：可免写一次语文作业" maxlength="60"></textarea>
+        </div>
+        <div class="field">
+            <label>支付方式（可添加多个支付组）</label>
+            <div class="payment-groups" id="paymentGroups"></div>
+            <button type="button" class="btn btn-primary" onclick="addPaymentGroup()" style="font-size:12px; padding:5px 14px;">+ 添加支付组</button>
+            <div class="payment-tip">
+                💡 <strong>主支付</strong>：直接从这个项目里扣分。<br>
+                💡 <strong>替位补充</strong>：主支付不够时，差额自动从替位项目里补扣；主支付够时不会动替位。<br>
+                💡 添加多个支付组时，每个组独立结算（都必须满足）。
+            </div>
+        </div>
+        <div class="field">
+            <label>库存（-1 不限）</label>
+            <input type="number" id="itemStock" value="-1" min="-1" step="1">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" id="itemDeleteBtn" onclick="deleteItem()" style="display:none;margin-right:auto;">🗑️ 删除</button>
+            <button class="btn" onclick="closeItemModal()">取消</button>
+            <button class="btn btn-primary" onclick="saveItem()">保存</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="exchangeModal">
+    <div class="modal-box" style="max-width:620px;">
+        <h3>
+            <span id="exchangeTitle">🎁 选择学生</span>
+            <button class="close" onclick="closeExchangeModal()">✕</button>
+        </h3>
+        <div id="exchangeInfo" style="font-size:13px;color:#94a3b8;margin-bottom:12px;"></div>
+        <input type="text" class="student-search" id="studentSearch" placeholder="搜索学生姓名…" oninput="filterStudents()">
+        <div class="sort-bar">
+            <span class="label">排序：</span>
+            <div class="sort-group" id="sortGroup">
+                <button data-sort="score" class="active">💎 按分数</button>
+                <button data-sort="name">🔤 按姓名</button>
+                <button data-sort="group">🏷️ 按小组</button>
+            </div>
+        </div>
+        <div class="student-list" id="studentList"></div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeExchangeModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="recordsModal">
+    <div class="modal-box" style="max-width:620px;">
+        <h3>
+            <span>📜 兑换记录</span>
+            <button class="close" onclick="closeRecordsModal()">✕</button>
+        </h3>
+        <div class="record-list" id="recordList"></div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" onclick="clearRecords()" style="margin-right:auto;">🗑️ 清空记录</button>
+            <button class="btn" onclick="closeRecordsModal()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="certModal">
+    <div class="modal-box wide">
+        <h3>
+            <span>🏆 生成电子奖状</span>
+            <button class="close" onclick="closeCertModal()">✕</button>
+        </h3>
+        <div class="cert-layout">
+            <div class="cert-preview-wrap">
+                <canvas id="certCanvas"></canvas>
+            </div>
+            <div class="cert-form">
+                <div class="field">
+                    <label>奖状样式</label>
+                    <div class="style-list" id="styleList"></div>
+                </div>
+                <div class="field">
+                    <label>学生姓名</label>
+                    <input type="text" id="certName" readonly>
+                </div>
+                <div class="field">
+                    <label>获奖词</label>
+                    <div class="template-list" id="templateList"></div>
+                    <textarea id="certText"></textarea>
+                </div>
+                <div class="field">
+                    <label>落款</label>
+                    <input type="text" id="certSignature" maxlength="20">
+                </div>
+                <div class="field">
+                    <label>日期</label>
+                    <input type="text" id="certDate" maxlength="30">
+                </div>
+                <div class="seal-tip">
+                    <strong>🔖 印章中央</strong><br>
+                    优先 <code>logo.svg</code>，其次你上传的图片，都失败显示"奖"字。
+                    <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <button class="btn btn-info" onclick="uploadSealLogo()" style="font-size:12px; padding:4px 12px;">上传图片</button>
+                        <button class="btn btn-danger" onclick="clearSealLogo()" style="font-size:12px; padding:4px 12px;">清除</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn" onclick="closeCertModal()">取消</button>
+            <button class="btn btn-info" onclick="copyCertificate()">📋 复制图片</button>
+            <button class="btn btn-success" onclick="downloadCertificate()">📥 下载 PNG</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="dataManager.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    const params = new URLSearchParams(location.search);
+    const CURRENT_CLASS = params.get('classId') || params.get('class')
+        || localStorage.getItem('currentClassId') || '一班';
+
+    const CATEGORIES = ['安全','道德','艺体','学习','纪律','卫生','仪态','就餐','住宿','走读'];
+    const CAT_ICONS = ['🛡️','⚖️','🎨','📚','📋','🧹','👔','🥢','🛏️','🚌'];
+    const SUBJECTS = ['语文','数学','英语','物理','化学','历史','地理','生物','政治'];
+    const SUB_ICONS = ['📕','🔢','🔤','⚛️','🧪','📜','🗺️','🧬','🏛️'];
+
+    const KEY_ITEMS = 'shopItems_' + CURRENT_CLASS;
+    const KEY_RECORDS = 'shopRecords_' + CURRENT_CLASS;
+    const KEY_SEAL = 'shopSealLogo_' + CURRENT_CLASS;
+    const KEY_SEAL_AUTO = 'shopSealLogoAuto_' + CURRENT_CLASS;
+    const CERT_ITEM_ID = 'default_certificate';
+
+    // 模板文字已改为"特发此状，以资鼓励。"独立成行（\n 换行）
+    const CERT_TEMPLATES = [
+        { name: '学习优异', text: '在本周学习中表现优异，成绩突出。\n特发此状，以资鼓励。' },
+        { name: '进步显著', text: '在本周课堂中表现积极，追求进步。\n特发此状，以资鼓励。' },
+        { name: '单科状元', text: '在本周测验中特长突出，成功登顶。\n特发此状，以资鼓励。' },
+        { name: '量化优秀', text: '在本周量化评比中表现优异，各科均衡发展。\n特发此状，以资鼓励。' },
+        { name: '综合表现', text: '在本学期表现优秀，学习认真，纪律良好，乐于助人。\n特发此状，以资鼓励。' }
+    ];
+
+    // 10 种样式（5 原有 + 5 新增，均为结构性差异）
+    const CERT_STYLES = [
+        // 原有 5 种
+        { key: 'vertical', name: '竖版喜报',   swatch: '#c0392b' },
+        { key: 'modern',   name: '现代证书',   swatch: '#1a3a5c' },
+        { key: 'vine',     name: '花边藤蔓',   swatch: '#2e8b57' },
+        { key: 'starry',   name: '星空荣誉',   swatch: '#1a237e' },
+        { key: 'cartoon',  name: '童趣贴纸',   swatch: '#ff7043' },
+        // 新增 5 种（结构完全不同）
+        { key: 'trophy',   name: '奖杯荣耀',   swatch: '#c9a961' },
+        { key: 'scroll',   name: '卷轴竹简',   swatch: '#8b5a2b' },
+        { key: 'medal',    name: '勋章加冕',   swatch: '#b8232f' },
+        { key: 'split',    name: '左右分栏',   swatch: '#2c5f8a' },
+        { key: 'fan',      name: '扇面金榜',   swatch: '#6d28d9' }
+    ];
+
+    const SEAL_RING_TEXT = '勤能补拙，熟能生巧。循序渐进，持之以恒。';
+    const VERTICAL_STYLES = ['vertical', 'trophy', 'fan'];
+
+    const EMOJI_DATA = {
+        study: [
+            ['📚','书本 学习'],['📖','书 阅读'],['📕','红书'],['📗','绿书'],['📘','蓝书'],['📙','橙书'],
+            ['📔','笔记'],['📓','本子'],['📒','笔记本'],['📝','便签 记录'],['✏️','铅笔'],['✒️','钢笔'],
+            ['🖊️','签字笔'],['🖋️','钢笔'],['🖍️','蜡笔'],['📐','三角尺'],['📏','直尺'],['📌','图钉'],
+            ['📍','定位'],['🔖','书签'],['🎓','毕业 学位'],['🎒','书包'],['📎','曲别针'],['📁','文件夹'],
+            ['📂','文件夹'],['🗂️','档案'],['📅','日历'],['📆','日历'],['🗓️','日历'],['⏰','闹钟'],
+            ['⌚','手表'],['⏳','沙漏'],['🖥️','电脑'],['💻','笔记本'],['⌨️','键盘'],['🖨️','打印机']
+        ],
+        food: [
+            ['🍎','苹果'],['🍊','橘子'],['🍋','柠檬'],['🍌','香蕉'],['🍉','西瓜'],['🍇','葡萄'],
+            ['🍓','草莓'],['🫐','蓝莓'],['🍒','樱桃'],['🍑','桃子'],['🥭','芒果'],['🍍','菠萝'],
+            ['🥥','椰子'],['🥝','猕猴桃'],['🍅','番茄'],['🥑','牛油果'],['🥦','西兰花'],['🥕','胡萝卜'],
+            ['🌽','玉米'],['🌶️','辣椒'],['🥒','黄瓜'],['🥬','青菜'],['🧄','蒜'],['🧅','洋葱'],
+            ['🍄','蘑菇'],['🥜','花生'],['🌰','栗子'],['🍞','面包'],['🥐','牛角包'],['🥖','法棍'],
+            ['🧀','奶酪'],['🍳','鸡蛋'],['🥞','煎饼'],['🥓','培根'],['🍔','汉堡'],['🍟','薯条'],
+            ['🍕','披萨'],['🌭','热狗'],['🥪','三明治'],['🌮','墨西哥卷'],['🍝','意面'],
+            ['🍜','面条'],['🍲','火锅'],['🍣','寿司'],['🍱','便当'],['🥟','饺子'],['🍤','炸虾'],
+            ['🍡','团子'],['🍧','刨冰'],['🍨','冰淇淋'],['🍦','甜筒'],['🥧','派'],['🧁','杯子蛋糕'],
+            ['🍰','蛋糕'],['🎂','生日蛋糕'],['🍭','棒棒糖'],['🍬','糖果'],['🍫','巧克力'],
+            ['🍿','爆米花'],['🍩','甜甜圈'],['🍪','饼干'],['🥛','牛奶'],['☕','咖啡'],['🍵','茶'],
+            ['🧃','果汁'],['🥤','汽水'],['🧋','奶茶']
+        ],
+        sport: [
+            ['⚽','足球'],['🏀','篮球'],['🏈','橄榄球'],['⚾','棒球'],['🥎','垒球'],['🎾','网球'],
+            ['🏐','排球'],['🏉','橄榄球'],['🥏','飞盘'],['🎱','台球'],['🏓','乒乓'],['🏸','羽毛球'],
+            ['🏒','冰球'],['🏑','曲棍球'],['🥍','长曲棍球'],['🏏','板球'],['⛳','高尔夫'],
+            ['🪁','风筝'],['🏹','射箭'],['🎣','钓鱼'],['🤿','潜水'],['🥊','拳击'],['🥋','武术'],
+            ['🎽','运动衣'],['🛹','滑板'],['🛼','轮滑'],['⛸️','滑冰'],['🥌','冰壶'],['🎿','滑雪'],
+            ['⛷️','滑雪'],['🏂','单板'],['🤸','体操'],['🤺','击剑'],['🤾','手球'],['🏌️','高尔夫'],
+            ['🏇','赛马'],['🧘','瑜伽'],['🏄','冲浪'],['🏊','游泳'],['🚣','划船'],['🧗','攀岩'],
+            ['🚵','山地车'],['🚴','骑车']
+        ],
+        reward: [
+            ['🏆','奖杯 冠军'],['🥇','金牌'],['🥈','银牌'],['🥉','铜牌'],['🎖️','勋章'],['🏅','奖牌'],
+            ['🎗️','丝带'],['👑','皇冠'],['💎','钻石'],['💍','戒指'],['🌟','闪星'],['⭐','星星'],
+            ['✨','亮闪闪'],['🎉','庆祝'],['🎊','彩球'],['🎁','礼物'],['🎀','蝴蝶结'],['🎈','气球'],
+            ['🧧','红包'],['🎫','票'],['🎟️','票'],['💐','花束'],['🌹','玫瑰'],['🌷','郁金香'],
+            ['🌻','向日葵'],['🌺','芙蓉'],['🌸','樱花'],['🍀','四叶草'],['🌈','彩虹'],['💫','流星'],
+            ['🔥','火焰'],['💯','满分'],['🎯','靶心']
+        ],
+        animal: [
+            ['🐱','猫'],['🐶','狗'],['🐰','兔子'],['🐻','熊'],['🐼','熊猫'],['🐨','考拉'],
+            ['🐯','老虎'],['🦁','狮子'],['🐮','牛'],['🐷','猪'],['🐸','青蛙'],['🐵','猴'],
+            ['🐔','鸡'],['🐧','企鹅'],['🐦','小鸟'],['🐤','小鸡'],['🐣','孵化'],['🐺','狼'],
+            ['🐴','马'],['🦄','独角兽'],['🐝','蜜蜂'],['🐛','毛虫'],['🦋','蝴蝶'],['🐌','蜗牛'],
+            ['🐞','瓢虫'],['🐜','蚂蚁'],['🐢','乌龟'],['🐍','蛇'],['🦎','蜥蜴'],['🦖','霸王龙'],
+            ['🐙','章鱼'],['🦑','鱿鱼'],['🦐','虾'],['🦀','螃蟹'],['🐡','河豚'],['🐠','热带鱼'],
+            ['🐟','鱼'],['🐬','海豚'],['🐳','鲸'],['🦈','鲨鱼'],['🐊','鳄鱼'],['🦅','鹰'],
+            ['🦉','猫头鹰'],['🦇','蝙蝠'],['🐿','松鼠'],['🦔','刺猬'],['🐹','仓鼠'],['🐭','老鼠'],
+            ['🐉','龙'],['🦚','孔雀'],['🦜','鹦鹉'],['🦢','天鹅'],['🦩','火烈鸟'],['🕊','鸽子'],
+            ['🦆','鸭子'],['🦊','狐狸'],['🦝','浣熊'],['🦘','袋鼠'],['🦥','树懒']
+        ],
+        nature: [
+            ['🌵','仙人掌'],['🎄','圣诞树'],['🌲','松树'],['🌳','树'],['🌴','棕榈树'],
+            ['🌱','嫩芽'],['🌿','草'],['☘️','三叶草'],['🌾','稻穗'],['🍂','落叶'],['🍁','枫叶'],
+            ['🌞','太阳'],['🌝','月亮'],['🌙','弯月'],['☁️','云'],['🌧️','雨'],['⛈️','雷雨'],
+            ['❄️','雪花'],['⛄','雪人'],['💧','水滴'],['🌊','海浪'],['🏔️','雪山'],['🌋','火山'],
+            ['🏝️','小岛'],['🌅','日出'],['🌄','日落'],['🌌','星空'],['🌠','流星'],['🔮','水晶球']
+        ],
+        mood: [
+            ['😀','开心'],['😃','开心'],['😄','大笑'],['😁','笑嘻嘻'],['😆','大笑'],
+            ['😊','微笑'],['😇','天使'],['🙂','微笑'],['😉','眨眼'],['😍','喜欢'],['😘','亲亲'],
+            ['🥰','爱心'],['😋','馋'],['😜','调皮'],['🤪','搞怪'],['🤗','拥抱'],['🤔','思考'],
+            ['🤭','捂嘴'],['🤫','嘘'],['😴','睡觉'],['🥳','庆祝'],['🤩','星星眼'],['😎','酷'],
+            ['🥺','委屈'],['😢','难过'],['😭','大哭'],['😤','不服'],['😠','生气'],['😈','小恶魔'],
+            ['👍','赞'],['👏','鼓掌'],['🙌','举手'],['🙏','拜托'],['💪','加油'],
+            ['❤️','红心'],['💖','爱心'],['💕','两心'],['💗','心动'],['💝','心礼物'],['💘','一箭穿心']
+        ],
+        other: [
+            ['🎮','游戏手柄'],['🎲','骰子'],['🎪','马戏团'],['🎨','调色板'],['🎭','戏剧'],
+            ['🎬','电影'],['🎤','麦克风'],['🎧','耳机'],['🎼','乐谱'],['🎹','钢琴'],
+            ['🥁','鼓'],['🎷','萨克斯'],['🎺','小号'],['🎸','吉他'],['🎻','小提琴'],['📷','相机'],
+            ['📸','拍立得'],['📹','摄像机'],['🎥','电影机'],['📺','电视'],['📻','收音机'],
+            ['📱','手机'],['☎️','电话'],['📞','电话'],['💡','灯泡'],['🔑','钥匙'],['🔒','锁'],
+            ['⚡','闪电'],['☀️','太阳'],['🌤️','晴转多云'],['🪄','魔法棒'],['🎩','礼帽'],
+            ['🧸','泰迪熊'],['🪀','悠悠球'],['♟️','棋子'],['🧩','拼图'],['🎰','老虎机'],
+            ['🚀','火箭'],['✈️','飞机'],['🚗','汽车'],['🏠','家'],['🏰','城堡'],['🗽','自由女神'],
+            ['🎡','摩天轮']
+        ]
+    };
+
+    const EMOJI_CATS = [
+        { key: 'all',     label: '全部' },
+        { key: 'study',   label: '学习' },
+        { key: 'food',    label: '食物' },
+        { key: 'sport',   label: '运动' },
+        { key: 'reward',  label: '奖励' },
+        { key: 'animal',  label: '动物' },
+        { key: 'nature',  label: '自然' },
+        { key: 'mood',    label: '心情' },
+        { key: 'other',   label: '其他' }
+    ];
+
+    let items = [];
+    let records = [];
+    let students = [];
+    let editingItemId = null;
+    let selectedEmoji = '🎁';
+    let emojiCat = 'all';
+    let currentFilter = 'all';
+    let currentExchangeItemId = null;
+    let currentSortMode = 'score';
+    let certStudent = null;
+    let certStyle = 'vertical';
+    let sealImage = null;
+
+    function $(id) { return document.getElementById(id); }
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+    function uid(p) { return (p || 'id') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6); }
+    function showToast(msg, type) {
+        const t = $('toast');
+        t.textContent = msg;
+        t.className = 'toast show' + (type ? ' ' + type : '');
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => { t.className = 'toast'; }, 3000);
+    }
+    function fmtTime(ts) {
+        const d = new Date(ts);
+        return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0')
+            + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+    function todayStr() {
+        const d = new Date();
+        return d.getFullYear() + ' 年 ' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日';
+    }
+
+    function migrateItem(it) {
+        if (!Array.isArray(it.paymentGroups) || it.paymentGroups.length === 0) {
+            if (Array.isArray(it.payments) && it.payments.length > 0) {
+                it.paymentGroups = it.payments.map(p => ({
+                    main: { type: p.type || 'dimension', currency: p.currency, cost: p.cost },
+                    fallback: null
+                }));
+            } else if (it.currency && it.cost) {
+                it.paymentGroups = [{
+                    main: { type: it.type || 'dimension', currency: it.currency, cost: it.cost },
+                    fallback: null
+                }];
+            } else {
+                it.paymentGroups = [];
+            }
+        }
+        delete it.payments;
+        delete it.currency;
+        delete it.type;
+        delete it.cost;
+        return it;
+    }
+
+    function loadItems() {
+        try {
+            const raw = localStorage.getItem(KEY_ITEMS);
+            if (raw) {
+                const arr = JSON.parse(raw);
+                if (Array.isArray(arr)) items = arr.map(migrateItem);
+            }
+        } catch(e) {}
+    }
+    function saveItems() {
+        try { localStorage.setItem(KEY_ITEMS, JSON.stringify(items)); } catch(e) {}
+    }
+    function ensureDefaultItems() {
+        if (!items.some(it => it.id === CERT_ITEM_ID)) {
+            items.unshift({
+                id: CERT_ITEM_ID, name: '电子奖状', desc: '生成一张个性化奖状 PNG',
+                icon: '🏆',
+                paymentGroups: [{ main: { type: 'dimension', currency: '学习', cost: 1 }, fallback: null }],
+                stock: -1, special: 'certificate', createdAt: Date.now()
+            });
+            saveItems();
+        }
+    }
+    function loadRecords() {
+        try {
+            const raw = localStorage.getItem(KEY_RECORDS);
+            if (raw) {
+                const arr = JSON.parse(raw);
+                if (Array.isArray(arr)) records = arr;
+            }
+        } catch(e) {}
+    }
+    function saveRecords() {
+        if (records.length > 500) records = records.slice(0, 500);
+        try { localStorage.setItem(KEY_RECORDS, JSON.stringify(records)); } catch(e) {}
+    }
+    function loadStudents() {
+        try {
+            const cd = DataManager.loadClassData(CURRENT_CLASS);
+            if (cd && Array.isArray(cd.students)) {
+                students = cd.students.filter(s => !s.onLeave);
+            }
+        } catch(e) {}
+    }
+
+    function getOneBalance(student, pay) {
+        if (!student) return 0;
+        if (pay.type === 'dimension') {
+            const idx = CATEGORIES.indexOf(pay.currency);
+            return idx === -1 ? 0 : (parseFloat((student.cats || [])[idx]) || 0);
+        } else {
+            return parseFloat(student['subject_' + pay.currency]) || 0;
+        }
+    }
+
+    function calcPayment(item, student) {
+        const groups = item.paymentGroups || [];
+        if (groups.length === 0) return null;
+        const plan = [];
+        for (const g of groups) {
+            if (!g.main || !g.main.currency) return null;
+            const mainBal = getOneBalance(student, g.main);
+            const need = g.main.cost;
+            if (mainBal >= need - 0.0001) {
+                plan.push({
+                    type: g.main.type, currency: g.main.currency,
+                    before: mainBal, deduct: Math.round(need * 10) / 10,
+                    after: Math.round((mainBal - need) * 10) / 10,
+                    role: 'main'
+                });
+            } else {
+                if (!g.fallback || !g.fallback.currency) return null;
+                if (g.fallback.type === g.main.type && g.fallback.currency === g.main.currency) return null;
+                const shortfall = need - mainBal;
+                const fbBal = getOneBalance(student, g.fallback);
+                if (fbBal < shortfall - 0.0001) return null;
+                if (mainBal > 0) {
+                    plan.push({
+                        type: g.main.type, currency: g.main.currency,
+                        before: mainBal, deduct: Math.round(mainBal * 10) / 10,
+                        after: 0, role: 'main'
+                    });
+                }
+                plan.push({
+                    type: g.fallback.type, currency: g.fallback.currency,
+                    before: fbBal, deduct: Math.round(shortfall * 10) / 10,
+                    after: Math.round((fbBal - shortfall) * 10) / 10,
+                    role: 'fallback'
+                });
+            }
+        }
+        const total = plan.reduce((s, p) => s + p.deduct, 0);
+        return { plan, total: Math.round(total * 10) / 10 };
+    }
+
+    function applyPayment(student, plan) {
+        for (const p of plan) {
+            if (p.deduct <= 0) continue;
+            if (p.type === 'dimension') {
+                const idx = CATEGORIES.indexOf(p.currency);
+                if (idx === -1) continue;
+                if (!Array.isArray(student.cats)) student.cats = CATEGORIES.map(() => 0);
+                student.cats[idx] = p.after;
+            } else {
+                student['subject_' + p.currency] = p.after;
+            }
+        }
+    }
+
+    function getPayIcon(pay) {
+        return pay.type === 'dimension'
+            ? (CAT_ICONS[CATEGORIES.indexOf(pay.currency)] || '🎯')
+            : (SUB_ICONS[SUBJECTS.indexOf(pay.currency)] || '📚');
+    }
+
+    function getTotalNeed(item) {
+        return (item.paymentGroups || []).reduce((s, g) => s + (g.main ? g.main.cost : 0), 0);
+    }
+
+    function getTotalAvail(item, student) {
+        return (item.paymentGroups || []).reduce((s, g) => {
+            if (g.main) return s + getOneBalance(student, g.main);
+            return s;
+        }, 0);
+    }
+
+    function renderItems() {
+        const grid = $('itemsGrid');
+        grid.innerHTML = '';
+        const filtered = currentFilter === 'all' ? items
+            : items.filter(it => (it.paymentGroups || []).some(g => g.main && g.main.type === currentFilter));
+        if (filtered.length === 0) {
+            grid.innerHTML = `<div class="empty-tip" style="grid-column:1/-1;">
+                <span class="big">🛒</span>${items.length === 0 ? '还没有商品，点击上方「+ 新增商品」开始' : '这个分类下没有商品'}</div>`;
+            updateCounts();
+            return;
+        }
+        filtered.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'item-card' + (item.special === 'certificate' ? ' special' : '');
+            const stockText = item.stock === -1 ? '库存不限' : (item.stock <= 0 ? '已售罄' : '剩余 ' + item.stock + ' 件');
+            const stockClass = item.stock === -1 ? '' : (item.stock <= 0 ? 'out' : (item.stock <= 3 ? 'low' : ''));
+            let payHtml = '';
+            (item.paymentGroups || []).forEach(g => {
+                if (!g.main) return;
+                let inner = `<div class="pay-main">${getPayIcon(g.main)}<span>${escapeHtml(g.main.currency)}</span> <strong>${g.main.cost}</strong></div>`;
+                if (g.fallback && g.fallback.currency) {
+                    inner += `<div class="pay-fb">不够时从「${escapeHtml(g.fallback.currency)}」补</div>`;
+                }
+                payHtml += `<div class="pay-group">${inner}</div>`;
+            });
+            card.innerHTML = `
+                <div class="emoji">${item.icon || '🎁'}</div>
+                <div class="name">${escapeHtml(item.name)}</div>
+                <div class="desc">${escapeHtml(item.desc || '')}</div>
+                <div class="pay-groups">${payHtml}</div>
+                <div class="stock ${stockClass}">${stockText}</div>
+                <div class="actions">
+                    <button class="btn-exchange" ${item.stock === 0 ? 'disabled' : ''} onclick="openExchangeModal('${item.id}')">
+                        ${item.stock === 0 ? '已售罄' : (item.special === 'certificate' ? '🏆 生成' : '🎁 兑换')}
+                    </button>
+                    <button class="btn-edit" onclick="openItemModal('${item.id}')">✏️</button>
+                </div>`;
+            grid.appendChild(card);
+        });
+        updateCounts();
+    }
+    function updateCounts() {
+        $('itemCount').textContent = items.length + ' 件商品';
+        $('recordCount').textContent = records.length + ' 条兑换';
+    }
+
+    function renderEmojiCats() {
+        const cats = $('emojiCats');
+        cats.innerHTML = '';
+        EMOJI_CATS.forEach(c => {
+            const btn = document.createElement('button');
+            btn.textContent = c.label;
+            if (emojiCat === c.key) btn.classList.add('active');
+            btn.onclick = () => {
+                emojiCat = c.key;
+                $('emojiSearch').value = '';
+                renderEmojiCats();
+                renderEmojiPicker();
+            };
+            cats.appendChild(btn);
+        });
+    }
+
+    function getAllEmojis() {
+        const all = [];
+        Object.keys(EMOJI_DATA).forEach(cat => {
+            EMOJI_DATA[cat].forEach(([e, k]) => { all.push({ e, k, cat }); });
+        });
+        return all;
+    }
+
+    function renderEmojiPicker() {
+        const picker = $('emojiPicker');
+        picker.innerHTML = '';
+        const q = ($('emojiSearch').value || '').trim().toLowerCase();
+        let list;
+        if (q) {
+            list = getAllEmojis().filter(item => item.k.toLowerCase().includes(q) || item.e === q);
+        } else if (emojiCat === 'all') {
+            list = getAllEmojis();
+        } else {
+            list = (EMOJI_DATA[emojiCat] || []).map(([e, k]) => ({ e, k, cat: emojiCat }));
+        }
+        if (list.length === 0) {
+            picker.innerHTML = '<div class="emoji-empty">没有找到匹配的图标，换个词试试</div>';
+            return;
+        }
+        list.forEach(item => {
+            const btn = document.createElement('button');
+            btn.textContent = item.e;
+            btn.title = item.k;
+            if (item.e === selectedEmoji) btn.classList.add('selected');
+            btn.onclick = () => { selectedEmoji = item.e; renderEmojiPicker(); };
+            picker.appendChild(btn);
+        });
+    }
+
+    function filterEmojis() { renderEmojiPicker(); }
+
+    function makeCurrencySelect(type, selected) {
+        const sel = document.createElement('select');
+        sel.className = 'pg-currency-select';
+        const list = type === 'dimension'
+            ? CATEGORIES.map((c, i) => ({ value: c, text: CAT_ICONS[i] + ' ' + c }))
+            : SUBJECTS.map((s, i) => ({ value: s, text: SUB_ICONS[i] + ' ' + s }));
+        list.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value;
+            opt.textContent = o.text;
+            sel.appendChild(opt);
+        });
+        if (selected) sel.value = selected;
+        return sel;
+    }
+
+    function makeTypeSelect(selected) {
+        const sel = document.createElement('select');
+        sel.className = 'pg-type-select';
+        [{ value: 'dimension', text: '🎯 十维' }, { value: 'subject', text: '📚 九科' }].forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value;
+            opt.textContent = o.text;
+            sel.appendChild(opt);
+        });
+        sel.value = selected || 'dimension';
+        return sel;
+    }
+
+    function addPaymentGroup(data) {
+        const container = $('paymentGroups');
+        const group = document.createElement('div');
+        group.className = 'payment-group';
+        const main = (data && data.main) || { type: 'dimension', currency: '学习', cost: 10 };
+        const fallback = data && data.fallback;
+        const idx = container.children.length + 1;
+        group.innerHTML = `
+            <div class="pg-title"><span class="num">${idx}</span> 支付组</div>
+            <button type="button" class="pg-del" title="删除此支付组">✕</button>
+            <div class="pg-row pg-main"><span class="pg-label">主</span></div>
+            <div class="pg-row pg-fallback"><span class="pg-label">替</span></div>`;
+        const mainRow = group.querySelector('.pg-main');
+        const mainType = makeTypeSelect(main.type);
+        const mainCurr = makeCurrencySelect(main.type, main.currency);
+        const mainCost = document.createElement('input');
+        mainCost.type = 'number';
+        mainCost.className = 'pg-cost';
+        mainCost.value = main.cost;
+        mainCost.min = '0.1';
+        mainCost.step = '0.5';
+        mainType.onchange = () => {
+            const newCurr = makeCurrencySelect(mainType.value, null);
+            mainCurr.innerHTML = newCurr.innerHTML;
+            mainCurr.value = newCurr.value;
+        };
+        mainRow.appendChild(mainType);
+        mainRow.appendChild(mainCurr);
+        mainRow.appendChild(mainCost);
+        const fbRow = group.querySelector('.pg-fallback');
+        const renderFallbackRow = () => {
+            fbRow.innerHTML = '<span class="pg-label">替</span>';
+            if (!group._fallback) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'pg-fb-toggle';
+                btn.textContent = '+ 添加替位补充（不够时自动从这补扣）';
+                btn.onclick = () => {
+                    group._fallback = { type: 'dimension', currency: '纪律' };
+                    renderFallbackRow();
+                };
+                fbRow.appendChild(btn);
+            } else {
+                const fbType = makeTypeSelect(group._fallback.type);
+                const fbCurr = makeCurrencySelect(group._fallback.type, group._fallback.currency);
+                fbType.onchange = () => {
+                    const newCurr = makeCurrencySelect(fbType.value, null);
+                    fbCurr.innerHTML = newCurr.innerHTML;
+                    fbCurr.value = newCurr.value;
+                };
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'pg-fb-del';
+                del.textContent = '✕';
+                del.title = '删除替位';
+                del.onclick = () => { group._fallback = null; renderFallbackRow(); };
+                fbRow.appendChild(fbType);
+                fbRow.appendChild(fbCurr);
+                fbRow.appendChild(del);
+            }
+        };
+        group._fallback = fallback;
+        renderFallbackRow();
+        group.querySelector('.pg-del').onclick = () => {
+            group.remove();
+            if ($('paymentGroups').children.length === 0) addPaymentGroup();
+            renumberPaymentGroups();
+        };
+        container.appendChild(group);
+        renumberPaymentGroups();
+    }
+
+    function renumberPaymentGroups() {
+        const list = $('paymentGroups');
+        Array.from(list.children).forEach((g, i) => {
+            const numEl = g.querySelector('.pg-title .num');
+            if (numEl) numEl.textContent = i + 1;
+        });
+    }
+
+    function openItemModal(id) {
+        editingItemId = id || null;
+        const isEdit = !!id;
+        $('itemModalTitle').textContent = isEdit ? '✏️ 编辑商品' : '➕ 新增商品';
+        $('itemDeleteBtn').style.display = (isEdit && id !== CERT_ITEM_ID) ? 'inline-flex' : 'none';
+        $('paymentGroups').innerHTML = '';
+        if (isEdit) {
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+            $('itemName').value = item.name || '';
+            $('itemDesc').value = item.desc || '';
+            $('itemStock').value = item.stock;
+            selectedEmoji = item.icon || '🎁';
+            (item.paymentGroups || []).forEach(g => addPaymentGroup(g));
+            if ((item.paymentGroups || []).length === 0) addPaymentGroup();
+        } else {
+            $('itemName').value = '';
+            $('itemDesc').value = '';
+            $('itemStock').value = -1;
+            selectedEmoji = '🎁';
+            addPaymentGroup();
+        }
+        emojiCat = 'all';
+        $('emojiSearch').value = '';
+        renderEmojiCats();
+        renderEmojiPicker();
+        $('itemModal').classList.add('open');
+    }
+    function closeItemModal() { $('itemModal').classList.remove('open'); editingItemId = null; }
+
+    function saveItem() {
+        const name = $('itemName').value.trim();
+        if (!name) { showToast('请输入商品名称', 'error'); return; }
+        const desc = $('itemDesc').value.trim();
+        const stock = parseInt($('itemStock').value);
+        if (isNaN(stock) || stock < -1) { showToast('库存格式不正确', 'error'); return; }
+        const groups = [];
+        const rows = $('paymentGroups').children;
+        for (const group of rows) {
+            const mainRow = group.querySelector('.pg-main');
+            const mainType = mainRow.querySelector('.pg-type-select').value;
+            const mainCurr = mainRow.querySelector('.pg-currency-select').value;
+            const mainCost = parseFloat(mainRow.querySelector('.pg-cost').value);
+            if (isNaN(mainCost) || mainCost <= 0) { showToast('主支付分数必须大于 0', 'error'); return; }
+            let fallback = null;
+            if (group._fallback) {
+                const fbRow = group.querySelector('.pg-fallback');
+                const fbType = fbRow.querySelector('.pg-type-select');
+                const fbCurr = fbRow.querySelector('.pg-currency-select');
+                if (fbType && fbCurr) {
+                    fallback = { type: fbType.value, currency: fbCurr.value };
+                    if (fallback.type === mainType && fallback.currency === mainCurr) {
+                        showToast('替位不能和主支付相同', 'error');
+                        return;
+                    }
+                }
+            }
+            groups.push({
+                main: { type: mainType, currency: mainCurr, cost: Math.round(mainCost * 10) / 10 },
+                fallback
+            });
+        }
+        if (groups.length === 0) { showToast('至少添加一个支付组', 'error'); return; }
+        if (editingItemId) {
+            const item = items.find(i => i.id === editingItemId);
+            if (item) {
+                item.name = name;
+                item.desc = desc;
+                item.icon = selectedEmoji;
+                item.paymentGroups = groups;
+                item.stock = stock;
+            }
+        } else {
+            items.push({
+                id: uid('item'), name, desc, icon: selectedEmoji,
+                paymentGroups: groups, stock, createdAt: Date.now()
+            });
+        }
+        saveItems();
+        closeItemModal();
+        renderItems();
+        showToast(editingItemId ? '✅ 已更新' : '✅ 已添加', 'success');
+    }
+
+    function deleteItem() {
+        if (!editingItemId || editingItemId === CERT_ITEM_ID) {
+            showToast('内置商品不可删除', 'error');
+            return;
+        }
+        const item = items.find(i => i.id === editingItemId);
+        if (!item || !confirm('确定删除商品「' + item.name + '」？')) return;
+        items = items.filter(i => i.id !== editingItemId);
+        saveItems();
+        closeItemModal();
+        renderItems();
+        showToast('🗑️ 已删除', 'success');
+    }
+
+    function openExchangeModal(itemId) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+        currentExchangeItemId = itemId;
+        loadStudents();
+        let info = '<div style="display:flex; flex-wrap:wrap; gap:6px;">';
+        (item.paymentGroups || []).forEach((g, i) => {
+            if (!g.main) return;
+            info += `<span style="background:rgba(251,191,36,0.12); padding:2px 10px; border-radius:12px;">`;
+            info += `<span style="color:#fbbf24;">${getPayIcon(g.main)} ${escapeHtml(g.main.currency)} ${g.main.cost}</span>`;
+            if (g.fallback && g.fallback.currency) {
+                info += ` <span style="color:#a5b4fc; font-size:11px;">(不足从 ${escapeHtml(g.fallback.currency)} 补)</span>`;
+            }
+            info += `</span>`;
+        });
+        info += '</div>';
+        $('exchangeTitle').textContent = (item.icon || '🎁') + ' ' + (item.special === 'certificate' ? '生成' : '兑换') + ' ' + item.name;
+        $('exchangeInfo').innerHTML = '需要：' + info;
+        $('studentSearch').value = '';
+        renderStudentList();
+        $('exchangeModal').classList.add('open');
+        setTimeout(() => $('studentSearch').focus(), 100);
+    }
+    function closeExchangeModal() { $('exchangeModal').classList.remove('open'); currentExchangeItemId = null; }
+
+    function renderStudentList(filter) {
+        const list = $('studentList');
+        list.innerHTML = '';
+        const item = items.find(i => i.id === currentExchangeItemId);
+        if (!item) return;
+        const q = (filter || '').toLowerCase();
+        const sorted = students.slice().sort((a, b) => {
+            if (currentSortMode === 'name') return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+            if (currentSortMode === 'group') {
+                const ga = a.groupName || '未分组', gb = b.groupName || '未分组';
+                if (ga !== gb) return ga.localeCompare(gb, 'zh-CN');
+                const oa = a.seatOrder || 0, ob = b.seatOrder || 0;
+                if (oa !== ob) return oa - ob;
+                return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+            }
+            const ta = getTotalAvail(item, a), tb = getTotalAvail(item, b);
+            if (tb !== ta) return tb - ta;
+            return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+        });
+        const filtered = q ? sorted.filter(s => (s.name || '').toLowerCase().includes(q)) : sorted;
+        if (filtered.length === 0) {
+            list.innerHTML = '<div style="padding:30px;text-align:center;color:#475569;font-size:13px;">没有匹配的学生</div>';
+            return;
+        }
+        const totalNeed = getTotalNeed(item);
+        filtered.forEach(s => {
+            const result = calcPayment(item, s);
+            const enough = !!result;
+            const avail = getTotalAvail(item, s);
+            const detail = (item.paymentGroups || []).map(g => {
+                if (!g.main) return '';
+                let t = g.main.currency + ' ' + getOneBalance(s, g.main).toFixed(1) + '/' + g.main.cost;
+                if (g.fallback) t += ' | 替位 ' + g.fallback.currency + ' ' + getOneBalance(s, g.fallback).toFixed(1);
+                return t;
+            }).filter(Boolean).join('；');
+            const row = document.createElement('div');
+            row.className = 'student-row';
+            row.innerHTML = `
+                <span class="avatar">${s.animal || '🐱'}</span>
+                <span class="sname">${escapeHtml(s.name)}</span>
+                <span class="sgroup">${escapeHtml(s.groupName || '未分组')}</span>
+                <span class="balance ${enough ? '' : 'insufficient'}" title="${escapeHtml(detail)}">
+                    可用 <strong>${avail.toFixed(1)}</strong>/${totalNeed}
+                </span>
+                <button ${enough ? '' : 'disabled'} onclick="doExchange(${s.id})">
+                    ${enough ? (item.special === 'certificate' ? '生成' : '兑换') : '不足'}
+                </button>`;
+            list.appendChild(row);
+        });
+    }
+    function filterStudents() { renderStudentList($('studentSearch').value.trim()); }
+    function initSortGroup() {
+        document.querySelectorAll('#sortGroup button').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('#sortGroup button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSortMode = btn.dataset.sort;
+                renderStudentList($('studentSearch').value.trim());
+            };
+        });
+    }
+
+    function doExchange(studentId) {
+        const item = items.find(i => i.id === currentExchangeItemId);
+        if (!item) return;
+        const cd = DataManager.loadClassData(CURRENT_CLASS);
+        if (!cd || !Array.isArray(cd.students)) { showToast('读取学生数据失败', 'error'); return; }
+        const student = cd.students.find(s => s.id === studentId);
+        if (!student) { showToast('找不到该学生', 'error'); return; }
+        if (item.stock === 0) { showToast('该商品已售罄', 'error'); return; }
+        const result = calcPayment(item, student);
+        if (!result) { showToast('分数不足，无法兑换', 'error'); return; }
+        let planText = '支付方案：\n';
+        result.plan.forEach(p => {
+            if (p.deduct <= 0) return;
+            const tag = p.role === 'fallback' ? '（替位补充）' : '';
+            planText += '  ' + p.currency + '：' + p.before.toFixed(1) + ' → ' + p.after.toFixed(1) + '  扣 ' + p.deduct.toFixed(1) + ' ' + tag + '\n';
+        });
+        planText += '共扣 ' + result.total.toFixed(1) + ' 分';
+        if (!confirm('确认兑换？\n\n学生：' + student.name + '\n商品：' + item.name + '\n\n' + planText)) return;
+        const rollback = {
+            studentId: student.id,
+            itemId: item.id,
+            plan: result.plan.map(p => ({ type: p.type, currency: p.currency, before: p.before })),
+            stockBefore: item.stock
+        };
+        applyPayment(student, result.plan);
+        if (item.stock > 0) { item.stock -= 1; saveItems(); }
+        if (!DataManager.saveClassData(cd, CURRENT_CLASS)) {
+            showToast('保存失败，请检查存储空间', 'error');
+            return;
+        }
+        const recordId = uid('rec');
+        records.unshift({
+            id: recordId, itemId: item.id, itemName: item.name,
+            itemIcon: item.icon || '🎁', studentId: student.id,
+            studentName: student.name, plan: result.plan,
+            totalCost: result.total, ts: Date.now()
+        });
+        saveRecords();
+        loadStudents();
+        showToast('🎉 ' + student.name + ' 兑换成功！扣 ' + result.total.toFixed(1) + ' 分', 'success');
+        renderStudentList($('studentSearch').value.trim());
+        renderItems();
+        if (item.special === 'certificate') {
+            setTimeout(() => {
+                closeExchangeModal();
+                try { openCertModal(student); }
+                catch(e) { console.error(e); rollbackExchange(rollback, recordId); }
+            }, 300);
+        }
+    }
+
+    function rollbackExchange(info, recordId) {
+        try {
+            const cd2 = DataManager.loadClassData(CURRENT_CLASS);
+            if (!cd2) throw new Error('no data');
+            const stu2 = cd2.students.find(s => s.id === info.studentId);
+            if (stu2) {
+                info.plan.forEach(p => {
+                    if (p.type === 'dimension') {
+                        const idx = CATEGORIES.indexOf(p.currency);
+                        if (idx !== -1) {
+                            if (!Array.isArray(stu2.cats)) stu2.cats = CATEGORIES.map(() => 0);
+                            stu2.cats[idx] = p.before;
+                        }
+                    } else {
+                        stu2['subject_' + p.currency] = p.before;
+                    }
+                });
+            }
+            const item2 = items.find(i => i.id === info.itemId);
+            if (item2 && item2.stock >= 0) { item2.stock = info.stockBefore; saveItems(); }
+            DataManager.saveClassData(cd2, CURRENT_CLASS);
+            records = records.filter(r => r.id !== recordId);
+            saveRecords();
+            loadStudents(); renderItems(); renderStudentList(); updateCounts();
+            showToast('⚠️ 奖状生成失败，分数和库存已退回', 'error');
+        } catch(e2) {
+            console.error('[回滚失败]', e2);
+            showToast('❌ 回滚失败，请手动修正分数', 'error');
+        }
+    }
+
+    // ================================================================
+    //  印章图片加载（XHR + fetch 双保险 + 自动缓存）
+    //  优先级：用户上传 > 自动缓存 > logo.svg（XHR优先） > "奖"字
+    // ================================================================
+    async function loadSealImage() {
+        // 1. 用户手动上传（最高优先级）
+        const uploaded = localStorage.getItem(KEY_SEAL);
+        if (uploaded) {
+            const ok = await tryLoadImage(uploaded);
+            if (ok) { console.log('✅ [印章] 使用用户上传的图片'); return true; }
+        }
+        // 2. 之前自动读取成功过 → 读缓存
+        const autoCached = localStorage.getItem(KEY_SEAL_AUTO);
+        if (autoCached) {
+            const ok = await tryLoadImage(autoCached);
+            if (ok) { console.log('✅ [印章] 使用缓存的 logo'); return true; }
+        }
+        // 3. 尝试读 logo.svg（XHR + fetch 双保险）
+        const logoData = await tryFetchLogoAsDataUrl();
+        if (logoData) {
+            const ok = await tryLoadImage(logoData);
+            if (ok) {
+                console.log('✅ [印章] 首次读取 logo.svg 成功，已缓存');
+                try { localStorage.setItem(KEY_SEAL_AUTO, logoData); } catch(e) {}
+                return true;
+            }
+        }
+        // 4. 兜底
+        sealImage = null;
+        console.log('ℹ️ [印章] 未找到 logo，将显示"奖"字。可在奖状弹窗里手动上传一次 logo 图片');
+        return false;
+    }
+
+    function tryLoadImage(src) {
+        return new Promise(resolve => {
+            const img = new Image();
+            const timer = setTimeout(() => resolve(false), 4000);
+            img.onload = () => { clearTimeout(timer); sealImage = img; resolve(true); };
+            img.onerror = () => { clearTimeout(timer); resolve(false); };
+            img.src = src;
+        });
+    }
+
+    async function tryFetchLogoAsDataUrl() {
+        const paths = ['logo.svg', './logo.svg'];
+
+        // 方案A：XHR（file:// 下最容易成功）
+        for (const p of paths) {
+            try {
+                const text = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', p, true);
+                    xhr.onreadystatechange = () => {
+                        if (xhr.readyState === 4) {
+                            if (xhr.status === 200 || xhr.status === 0) resolve(xhr.responseText);
+                            else reject(new Error('HTTP ' + xhr.status));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('XHR error'));
+                    xhr.send();
+                });
+                if (text && text.indexOf('<svg') !== -1) {
+                    const blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
+                    return await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                }
+            } catch(e) {
+                console.warn('[印章·XHR] ' + p + ' 失败：' + e.message);
+            }
+        }
+
+        // 方案B：fetch（http/https 下更可靠）
+        for (const p of paths) {
+            try {
+                const res = await fetch(p, { cache: 'no-cache' });
+                if (!res.ok) continue;
+                const text = await res.text();
+                if (!text || text.indexOf('<svg') === -1) continue;
+                const blob = new Blob([text], { type: 'image/svg+xml;charset=utf-8' });
+                return await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch(e) {
+                console.warn('[印章·fetch] ' + p + ' 失败：' + e.message);
+            }
+        }
+        return null;
+    }
+
+    function uploadSealLogo() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/png,image/jpeg';
+        input.onchange = function() {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.size > 500 * 1024) { showToast('图片太大，请用小于 500KB 的图片', 'error'); return; }
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try { localStorage.setItem(KEY_SEAL, ev.target.result); }
+                catch(err) { showToast('存储失败', 'error'); return; }
+                tryLoadImage(ev.target.result).then(ok => {
+                    if (ok) {
+                        showToast('✅ 印章图片已保存', 'success');
+                        try { updateCertificatePreview(); } catch(e) {}
+                    } else {
+                        showToast('⚠️ 图片格式不支持', 'error');
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+
+    function clearSealLogo() {
+        if (!confirm('清除上传的印章图片？\n（会重新尝试用 logo.svg）')) return;
+        localStorage.removeItem(KEY_SEAL);
+        loadSealImage().then(() => {
+            try { updateCertificatePreview(); } catch(e) {}
+            showToast('已清除', 'success');
+        });
+    }
+
+    // ================================================================
+    //  奖状
+    // ================================================================
+    function openCertModal(student) {
+        certStudent = student;
+        $('certName').value = student.name || '';
+        $('certText').value = CERT_TEMPLATES[4].text;
+        $('certSignature').value = '班主任';
+        $('certDate').value = todayStr();
+        renderStyleList();
+        renderTemplateList();
+        $('certModal').classList.add('open');
+        updateCertificatePreview();
+    }
+    function closeCertModal() { $('certModal').classList.remove('open'); certStudent = null; }
+
+    function renderStyleList() {
+        const list = $('styleList');
+        list.innerHTML = '';
+        CERT_STYLES.forEach(st => {
+            const btn = document.createElement('button');
+            if (st.key === certStyle) btn.classList.add('active');
+            btn.innerHTML = `<span class="swatch" style="background:${st.swatch};"></span>${st.name}`;
+            btn.onclick = () => {
+                certStyle = st.key;
+                renderStyleList();
+                try { updateCertificatePreview(); } catch(e) {}
+            };
+            list.appendChild(btn);
+        });
+    }
+
+    function renderTemplateList() {
+        const list = $('templateList');
+        list.innerHTML = '';
+        CERT_TEMPLATES.forEach(tpl => {
+            const btn = document.createElement('button');
+            btn.textContent = tpl.name;
+            btn.onclick = () => {
+                $('certText').value = tpl.text;
+                try { updateCertificatePreview(); } catch(e) {}
+            };
+            list.appendChild(btn);
+        });
+    }
+
+    function updateCertificatePreview() {
+        const canvas = $('certCanvas');
+        if (!canvas) throw new Error('找不到 canvas');
+        drawCertificate(canvas, {
+            name: $('certName').value.trim() || '同学',
+            text: $('certText').value.trim(),
+            signature: $('certSignature').value.trim(),
+            date: $('certDate').value.trim(),
+            style: certStyle
+        });
+    }
+
+    function drawCertificate(canvas, opts) {
+        const DPR = 1.5;
+        const isVertical = VERTICAL_STYLES.includes(opts.style);
+        const W = isVertical ? 900 : 1400;
+        const H = isVertical ? 1280 : 990;
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('无法获取 canvas context');
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+        if (opts.style === 'vertical') drawVertical(ctx, W, H, opts);
+        else if (opts.style === 'modern') drawModern(ctx, W, H, opts);
+        else if (opts.style === 'vine') drawVine(ctx, W, H, opts);
+        else if (opts.style === 'starry') drawStarry(ctx, W, H, opts);
+        else if (opts.style === 'cartoon') drawCartoon(ctx, W, H, opts);
+        else if (opts.style === 'trophy') drawTrophy(ctx, W, H, opts);
+        else if (opts.style === 'scroll') drawScroll(ctx, W, H, opts);
+        else if (opts.style === 'medal') drawMedal(ctx, W, H, opts);
+        else if (opts.style === 'split') drawSplit(ctx, W, H, opts);
+        else if (opts.style === 'fan') drawFan(ctx, W, H, opts);
+        else drawVertical(ctx, W, H, opts);
+    }
+
+    // ============ 原有 5 种（保持不变） ============
+    function drawVertical(ctx, W, H, opts) {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#b8232f'); g.addColorStop(1, '#8b1a22');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 8; ctx.strokeRect(24, 24, W - 48, H - 48);
+        ctx.strokeStyle = '#f0c14e'; ctx.lineWidth = 2; ctx.strokeRect(44, 44, W - 88, H - 88);
+        ctx.fillStyle = '#ffd76a';
+        ctx.beginPath(); ctx.moveTo(24, 24); ctx.lineTo(100, 24); ctx.lineTo(24, 100); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(W - 24, 24); ctx.lineTo(W - 100, 24); ctx.lineTo(W - 24, 100); ctx.closePath(); ctx.fill();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffd76a'; ctx.font = 'bold 140px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText('喜  报', W / 2, 200);
+        ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(W / 2 - 220, 285); ctx.lineTo(W / 2 + 220, 285); ctx.stroke();
+        ctx.fillStyle = '#fff5d6'; ctx.font = 'bold 64px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学', W / 2, 430);
+        ctx.font = '32px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#ffd76a';
+        ctx.fillText('— 荣誉表彰 —', W / 2, 510);
+        ctx.fillStyle = '#fff5d6'; ctx.font = '36px KaiTi, STKaiti, SimSun, serif';
+        const lines = wrapText(ctx, opts.text, W - 200);
+        let y = 610;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 60; });
+        ctx.textAlign = 'right'; ctx.font = '32px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#ffd76a';
+        if (opts.signature) ctx.fillText(opts.signature, W - 130, H - 220);
+        if (opts.date) ctx.fillText(opts.date, W - 130, H - 170);
+        drawSeal(ctx, W - 200, H - 190, 70, '#ffd76a');
+    }
+
+    function drawModern(ctx, W, H, opts) {
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#1a3a5c'; ctx.fillRect(0, 0, 180, H);
+        ctx.save(); ctx.translate(90, H / 2); ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#c9a961'; ctx.font = 'bold 40px Microsoft YaHei, sans-serif';
+        ctx.fillText('HONOR  CERTIFICATE', 0, 0); ctx.restore();
+        ctx.fillStyle = '#c9a961'; ctx.fillRect(174, 0, 6, H);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#1a3a5c'; ctx.font = 'bold 90px Microsoft YaHei, sans-serif';
+        ctx.fillText('荣誉证书', 180 + (W - 180) / 2, 180);
+        ctx.strokeStyle = '#c9a961'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(400, 250); ctx.lineTo(W - 150, 250); ctx.stroke();
+        ctx.fillStyle = '#1a3a5c'; ctx.font = 'bold 72px Microsoft YaHei, sans-serif';
+        ctx.fillText(opts.name + '  同学', 180 + (W - 180) / 2, 370);
+        ctx.fillStyle = '#c9a961';
+        ctx.beginPath();
+        ctx.arc(180 + (W - 180) / 2 - 100, 430, 4, 0, Math.PI * 2);
+        ctx.arc(180 + (W - 180) / 2, 430, 4, 0, Math.PI * 2);
+        ctx.arc(180 + (W - 180) / 2 + 100, 430, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#2c3e50'; ctx.font = '34px Microsoft YaHei, sans-serif';
+        const lines = wrapText(ctx, opts.text, W - 400);
+        let y = 510;
+        lines.forEach(line => { ctx.fillText(line, 180 + (W - 180) / 2, y); y += 60; });
+        ctx.strokeStyle = '#1a3a5c'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(260, H - 220); ctx.lineTo(W - 130, H - 220); ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(260, H - 212); ctx.lineTo(W - 130, H - 212); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.fillStyle = '#1a3a5c'; ctx.font = '30px Microsoft YaHei, sans-serif';
+        if (opts.signature) ctx.fillText(opts.signature, W - 150, H - 150);
+        if (opts.date) ctx.fillText(opts.date, W - 150, H - 105);
+        drawSeal(ctx, W - 230, H - 125, 70, '#1a3a5c');
+    }
+
+    function drawVine(ctx, W, H, opts) {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#fdf8ee'); g.addColorStop(1, '#f0e6cf');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = '#2e8b57'; ctx.lineWidth = 3; ctx.strokeRect(30, 30, W - 60, H - 60);
+        ctx.strokeStyle = '#52c97e'; ctx.lineWidth = 1; ctx.strokeRect(46, 46, W - 92, H - 92);
+        drawVineBorder(ctx, W, H, '#2e8b57');
+        drawVineFlower(ctx, W / 2, 120, 55, '#2e8b57', '#52c97e');
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#1e7a3d'; ctx.font = 'bold 120px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText('奖  状', W / 2, 260);
+        ctx.fillStyle = '#1a3a24'; ctx.font = 'bold 54px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学：', W / 2, 410);
+        ctx.font = '34px KaiTi, STKaiti, SimSun, serif';
+        const lines = wrapText(ctx, opts.text, W - 300);
+        let y = 540;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 60; });
+        ctx.textAlign = 'right'; ctx.font = '30px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#1e7a3d';
+        if (opts.signature) ctx.fillText(opts.signature, W - 200, H - 180);
+        if (opts.date) ctx.fillText(opts.date, W - 200, H - 130);
+        drawSeal(ctx, W - 330, H - 155, 75, '#1e7a3d');
+    }
+    function drawVineBorder(ctx, W, H, color) {
+        const padding = 32, spacing = 55;
+        for (let x = padding + spacing; x < W - padding; x += spacing) {
+            drawLeafPair(ctx, x, padding + 6, 0, color);
+            drawLeafPair(ctx, x, H - padding - 6, Math.PI, color);
+        }
+        for (let y = padding + spacing; y < H - padding; y += spacing) {
+            drawLeafPair(ctx, padding + 6, y, Math.PI / 2, color);
+            drawLeafPair(ctx, W - padding - 6, y, -Math.PI / 2, color);
+        }
+    }
+    function drawLeafPair(ctx, x, y, angle, color) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.fillStyle = color;
+        ctx.beginPath(); ctx.moveTo(-8, 0); ctx.quadraticCurveTo(-4, -8, 0, -10); ctx.quadraticCurveTo(-4, -4, -8, 0); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(8, 0); ctx.quadraticCurveTo(4, -8, 0, -10); ctx.quadraticCurveTo(4, -4, 8, 0); ctx.fill();
+        ctx.restore();
+    }
+    function drawVineFlower(ctx, cx, cy, r, color1, color2) {
+        ctx.fillStyle = color1;
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI * 2 / 6) * i - Math.PI / 2;
+            ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+            ctx.beginPath(); ellipseByBezier(ctx, 0, -r * 0.6, r * 0.3, r * 0.6); ctx.fill();
+            ctx.restore();
+        }
+        ctx.fillStyle = color2; ctx.beginPath(); ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function drawStarry(ctx, W, H, opts) {
+        const g = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, W * 0.8);
+        g.addColorStop(0, '#283593'); g.addColorStop(1, '#0d1442');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        let seed = 12345;
+        function rand() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+        for (let i = 0; i < 150; i++) {
+            const x = rand() * W, y = rand() * H, r = rand() * 1.8 + 0.4, a = rand() * 0.7 + 0.3;
+            ctx.fillStyle = 'rgba(255,255,255,' + a + ')';
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        }
+        [[150, 150, 3], [W - 180, 200, 2.5], [200, H - 180, 2.8], [W - 220, H - 150, 2.3]].forEach(([x, y, r]) => {
+            drawStar(ctx, x, y, r, 4, '#ffd76a');
+        });
+        const cx = W / 2, cy = H / 2, ringRadius = 300;
+        drawLaurelRing(ctx, cx, cy, ringRadius, '#ffd76a');
+        ctx.strokeStyle = 'rgba(255,215,106,0.4)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, ringRadius - 30, 0, Math.PI * 2); ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffd76a'; ctx.font = 'bold 100px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText('奖  状', cx, cy - 180);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 48px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学', cx, cy - 70);
+        ctx.font = '30px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#e0e7ff';
+        const lines = wrapText(ctx, opts.text, 480);
+        let y = cy + 20;
+        lines.forEach(line => { ctx.fillText(line, cx, y); y += 50; });
+        ctx.textAlign = 'center'; ctx.font = '26px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#c9a961';
+        const signY = cy + ringRadius + 60;
+        if (opts.signature) ctx.fillText(opts.signature, cx - 80, signY);
+        if (opts.date) ctx.fillText(opts.date, cx - 80, signY + 40);
+        drawSeal(ctx, cx + 100, signY + 20, 65, '#ffd76a');
+    }
+    function drawLaurelRing(ctx, cx, cy, radius, color) {
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, radius, Math.PI * 0.55, Math.PI * 1.45); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, radius, -Math.PI * 0.45, Math.PI * 0.45); ctx.stroke();
+        const totalLeafs = 18;
+        for (let i = 0; i < totalLeafs; i++) {
+            const t = i / (totalLeafs - 1);
+            const a1 = Math.PI * 0.55 + t * (Math.PI * 0.9);
+            drawLaurelLeaf(ctx, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius, a1 + Math.PI / 2, color);
+            const a2 = -Math.PI * 0.45 + t * (Math.PI * 0.9);
+            drawLaurelLeaf(ctx, cx + Math.cos(a2) * radius, cy + Math.sin(a2) * radius, a2 + Math.PI / 2, color);
+        }
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(cx, cy - radius, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    function drawLaurelLeaf(ctx, x, y, angle, color) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+        ctx.fillStyle = color; ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.quadraticCurveTo(15, -8, 28, 0); ctx.quadraticCurveTo(15, 8, 0, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1; ctx.restore();
+    }
+
+    function drawCartoon(ctx, W, H, opts) {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#fff9e6'); g.addColorStop(1, '#ffe6c7');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = '#ff7043'; ctx.lineWidth = 6;
+        drawRoundRect(ctx, 25, 25, W - 50, H - 50, 40); ctx.stroke();
+        ctx.strokeStyle = '#ffab91'; ctx.lineWidth = 2;
+        drawRoundRect(ctx, 42, 42, W - 84, H - 84, 34); ctx.stroke();
+        const colors = ['#ff7043', '#ffca28', '#66bb6a', '#42a5f5', '#ab47bc'];
+        for (let i = 0; i < 15; i++) {
+            const x = 90 + i * 80;
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath();
+            ctx.moveTo(x, 70); ctx.lineTo(x + 60, 70); ctx.lineTo(x + 30, 115);
+            ctx.closePath(); ctx.fill();
+        }
+        drawStar(ctx, 90, 170, 22, 5, '#ffca28');
+        drawStar(ctx, W - 90, 170, 22, 5, '#42a5f5');
+        drawBalloon(ctx, 80, H - 200, 22, '#ff5252');
+        drawBalloon(ctx, W - 80, H - 200, 22, '#66bb6a');
+        drawStar(ctx, 90, H - 90, 18, 5, '#ab47bc');
+        drawStar(ctx, W - 90, H - 90, 18, 5, '#ff7043');
+        ctx.fillStyle = '#ff7043';
+        drawRoundRect(ctx, W / 2 - 220, 170, 440, 130, 40); ctx.fill();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 100px Microsoft YaHei, PingFang SC, sans-serif';
+        ctx.fillText('奖  状', W / 2, 240);
+        ctx.fillStyle = '#d84315'; ctx.font = 'bold 60px Microsoft YaHei, PingFang SC, sans-serif';
+        ctx.fillText(opts.name + '  同学', W / 2, 410);
+        ctx.fillStyle = '#5d4037'; ctx.font = '34px Microsoft YaHei, PingFang SC, sans-serif';
+        const lines = wrapText(ctx, opts.text, W - 300);
+        let y = 530;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 58; });
+        for (let i = 0; i < 20; i++) {
+            const x = 110 + i * ((W - 220) / 19);
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.beginPath(); ctx.arc(x, H - 130, 5, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.textAlign = 'right'; ctx.fillStyle = '#d84315'; ctx.font = '28px Microsoft YaHei, PingFang SC, sans-serif';
+        if (opts.signature) ctx.fillText(opts.signature, W - 200, H - 220);
+        if (opts.date) ctx.fillText(opts.date, W - 200, H - 175);
+        drawSeal(ctx, W - 320, H - 195, 68, '#d84315');
+    }
+    function drawBalloon(ctx, cx, cy, r, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + r);
+        ctx.bezierCurveTo(cx - r * 1.3, cy + r * 0.5, cx - r * 1.3, cy - r * 1.3, cx, cy - r * 1.3);
+        ctx.bezierCurveTo(cx + r * 1.3, cy - r * 1.3, cx + r * 1.3, cy + r * 0.5, cx, cy + r);
+        ctx.fill();
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(cx, cy + r); ctx.lineTo(cx, cy + r + 30); ctx.stroke();
+    }
+
+    // ================================================================
+    //  新增 5 种样式（结构完全不同）
+    // ================================================================
+
+    // ========== 奖杯荣耀（竖版，深墨绿 + 中央超大金色奖杯） ==========
+    function drawTrophy(ctx, W, H, opts) {
+        // 背景深墨绿渐变
+        const bg = ctx.createRadialGradient(W/2, H*0.35, 100, W/2, H*0.35, W*1.1);
+        bg.addColorStop(0, '#14351f');
+        bg.addColorStop(1, '#061a0c');
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+        // 金色外框 + 内框
+        ctx.strokeStyle = '#c9a961'; ctx.lineWidth = 4; ctx.strokeRect(28, 28, W - 56, H - 56);
+        ctx.strokeStyle = 'rgba(201,169,97,0.5)'; ctx.lineWidth = 1; ctx.strokeRect(44, 44, W - 88, H - 88);
+
+        // 四角小菱形
+        [[60,60],[W-60,60],[60,H-60],[W-60,H-60]].forEach(([x,y]) => {
+            ctx.fillStyle = '#c9a961';
+            ctx.beginPath();
+            ctx.moveTo(x, y-10); ctx.lineTo(x+10, y); ctx.lineTo(x, y+10); ctx.lineTo(x-10, y);
+            ctx.closePath(); ctx.fill();
+        });
+
+        // ===== 中央大奖杯（位置：上方 1/3 处）=====
+        const trophyCX = W / 2, trophyCY = H * 0.28;
+        drawGoldenTrophy(ctx, trophyCX, trophyCY, 90);
+
+        // 弧形标题（在奖杯上方沿圆弧）
+        drawArcText(ctx, '荣 誉 奖 状', trophyCX, trophyCY, 175, 30, '#c9a961');
+
+        // 姓名
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#e8dcc0';
+        ctx.font = 'bold 56px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学', W / 2, H * 0.55);
+
+        // 分隔线
+        ctx.strokeStyle = 'rgba(201,169,97,0.6)'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(W/2 - 220, H * 0.585); ctx.lineTo(W/2 + 220, H * 0.585);
+        ctx.stroke();
+        ctx.fillStyle = '#c9a961';
+        ctx.beginPath();
+        ctx.moveTo(W/2, H * 0.575); ctx.lineTo(W/2 + 8, H * 0.585); ctx.lineTo(W/2, H * 0.595); ctx.lineTo(W/2 - 8, H * 0.585);
+        ctx.closePath(); ctx.fill();
+
+        // 正文
+        ctx.fillStyle = '#d4cfc0'; ctx.font = '34px KaiTi, STKaiti, SimSun, serif';
+        const lines = wrapText(ctx, opts.text, W - 220);
+        let y = H * 0.65;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 60; });
+
+        // 落款
+        ctx.textAlign = 'right'; ctx.font = '28px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#c9a961';
+        if (opts.signature) ctx.fillText(opts.signature, W - 130, H - 220);
+        if (opts.date) ctx.fillText(opts.date, W - 130, H - 170);
+
+        // 印章
+        drawSeal(ctx, W - 200, H - 190, 70, '#c9a961');
+    }
+
+    // 绘制金色奖杯
+    function drawGoldenTrophy(ctx, cx, cy, size) {
+        // 金色渐变
+        const grad = ctx.createLinearGradient(cx - size, cy - size, cx + size, cy + size);
+        grad.addColorStop(0, '#f6e27a');
+        grad.addColorStop(0.5, '#c9a961');
+        grad.addColorStop(1, '#8b6f3a');
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        // 杯身（上宽下窄的梯形，用贝塞尔曲线做圆润）
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.55, -size * 0.75);
+        ctx.lineTo(size * 0.55, -size * 0.75);
+        ctx.bezierCurveTo(size * 0.7, -size * 0.1, size * 0.35, size * 0.4, size * 0.25, size * 0.55);
+        ctx.lineTo(-size * 0.25, size * 0.55);
+        ctx.bezierCurveTo(-size * 0.35, size * 0.4, -size * 0.7, -size * 0.1, -size * 0.55, -size * 0.75);
+        ctx.closePath();
+        ctx.fill();
+
+        // 描边
+        ctx.strokeStyle = '#8b6f3a';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // 杯口（椭圆）
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(cx*0, -size * 0.75, size * 0.55, size * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 两侧杯耳
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        // 左耳
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.55, -size * 0.45);
+        ctx.bezierCurveTo(-size * 1.0, -size * 0.4, -size * 1.0, size * 0.05, -size * 0.35, size * 0.15);
+        ctx.stroke();
+        // 右耳
+        ctx.beginPath();
+        ctx.moveTo(size * 0.55, -size * 0.45);
+        ctx.bezierCurveTo(size * 1.0, -size * 0.4, size * 1.0, size * 0.05, size * 0.35, size * 0.15);
+        ctx.stroke();
+
+        // 杯座
+        ctx.fillStyle = grad;
+        ctx.fillRect(-size * 0.55, size * 0.55, size * 1.1, size * 0.12);
+        ctx.strokeRect(-size * 0.55, size * 0.55, size * 1.1, size * 0.12);
+        // 底座
+        ctx.fillRect(-size * 0.75, size * 0.67, size * 1.5, size * 0.12);
+        ctx.strokeRect(-size * 0.75, size * 0.67, size * 1.5, size * 0.12);
+
+        // 杯身上画一颗星星
+        ctx.fillStyle = '#ffffff';
+        drawStar(ctx, 0, -size * 0.25, size * 0.22, 5, '#fff8dc');
+        ctx.strokeStyle = '#8b6f3a';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // 沿圆弧排列文字（顶部朝外）
+    function drawArcText(ctx, text, cx, cy, radius, fontSize, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.font = 'bold ' + fontSize + 'px KaiTi, STKaiti, SimSun, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const chars = String(text).split('');
+        const n = chars.length;
+        if (n === 0) { ctx.restore(); return; }
+        const angleRange = Math.PI * 0.8;
+        const startAngle = -Math.PI / 2 - angleRange / 2;
+        const step = n > 1 ? angleRange / (n - 1) : 0;
+        for (let i = 0; i < n; i++) {
+            const a = startAngle + step * i;
+            const x = cx + Math.cos(a) * radius;
+            const y = cy + Math.sin(a) * radius;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(a + Math.PI / 2);
+            ctx.fillText(chars[i], 0, 0);
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    // ========== 卷轴竹简（横版，上下卷轴杆 + 中间竹简竖条） ==========
+    function drawScroll(ctx, W, H, opts) {
+        // 米黄底
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#f8f0dc');
+        g.addColorStop(0.5, '#f0e4c8');
+        g.addColorStop(1, '#e8d8b0');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+        // 中间竹简竖条（背景装饰）
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 1;
+        for (let x = 100; x < W - 100; x += 48) {
+            ctx.beginPath(); ctx.moveTo(x, 150); ctx.lineTo(x, H - 150); ctx.stroke();
+        }
+        ctx.restore();
+
+        // 内容区白底
+        ctx.fillStyle = 'rgba(255,252,240,0.75)';
+        ctx.fillRect(110, 130, W - 220, H - 260);
+
+        // 内细框
+        ctx.strokeStyle = 'rgba(139,90,43,0.4)'; ctx.lineWidth = 1;
+        ctx.strokeRect(120, 140, W - 240, H - 280);
+
+        // 顶部卷轴杆
+        drawScrollRod(ctx, 30, 60, W - 60, 40);
+        // 底部卷轴杆
+        drawScrollRod(ctx, 30, H - 100, W - 60, 40);
+
+        // 标题（居中）
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#5d3a1a';
+        ctx.font = 'bold 100px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText('奖  状', W / 2, 230);
+
+        // 标题下双横线
+        ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(W/2 - 200, 290); ctx.lineTo(W/2 + 200, 290); ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(W/2 - 160, 298); ctx.lineTo(W/2 + 160, 298); ctx.stroke();
+
+        // 姓名
+        ctx.fillStyle = '#3d2b1f'; ctx.font = 'bold 52px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学：', W / 2, 390);
+
+        // 正文
+        ctx.font = '34px KaiTi, STKaiti, SimSun, serif';
+        const lines = wrapText(ctx, opts.text, W - 400);
+        let y = 510;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 60; });
+
+        // 落款
+        ctx.textAlign = 'right'; ctx.font = '28px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#5d3a1a';
+        if (opts.signature) ctx.fillText(opts.signature, W - 200, H - 200);
+        if (opts.date) ctx.fillText(opts.date, W - 200, H - 150);
+
+        // 印章
+        drawSeal(ctx, W - 330, H - 175, 72, '#8b1a22');
+    }
+
+    // 绘制卷轴杆（圆角长条 + 两端圆头）
+    function drawScrollRod(ctx, x, y, w, h) {
+        const g = ctx.createLinearGradient(x, y, x, y + h);
+        g.addColorStop(0, '#a67c52');
+        g.addColorStop(0.5, '#6f4a2a');
+        g.addColorStop(1, '#3d2b1f');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        // 主体
+        ctx.rect(x + h/2, y, w - h, h);
+        // 左端圆
+        ctx.arc(x + h/2, y + h/2, h/2, 0, Math.PI * 2);
+        // 右端圆
+        ctx.arc(x + w - h/2, y + h/2, h/2, 0, Math.PI * 2);
+        ctx.fill();
+        // 描边
+        ctx.strokeStyle = '#2d1a0c'; ctx.lineWidth = 2;
+        ctx.stroke();
+        // 两端高光
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath();
+        ctx.arc(x + h/2, y + h/2 - 2, h/4, 0, Math.PI * 2);
+        ctx.arc(x + w - h/2, y + h/2 - 2, h/4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // ========== 勋章加冕（横版，顶部超大圆形勋章 + 两条垂下缎带） ==========
+    function drawMedal(ctx, W, H, opts) {
+        // 浅红底
+        const g = ctx.createRadialGradient(W/2, H/2, 100, W/2, H/2, W);
+        g.addColorStop(0, '#fdf6f0');
+        g.addColorStop(1, '#f0dcd0');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+        // 外框
+        ctx.strokeStyle = '#b8232f'; ctx.lineWidth = 4; ctx.strokeRect(28, 28, W - 56, H - 56);
+        ctx.strokeStyle = 'rgba(184,35,47,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(44, 44, W - 88, H - 88);
+
+        // ===== 顶部勋章 =====
+        const medalCX = W / 2, medalCY = 200;
+        drawBigMedal(ctx, medalCX, medalCY, 130);
+
+        // 从勋章垂下的两条红缎带
+        drawRibbon(ctx, medalCX - 40, medalCY + 120, -15, '#b8232f', '#8b1a22');
+        drawRibbon(ctx, medalCX + 40, medalCY + 120, 15, '#b8232f', '#8b1a22');
+
+        // 标题（勋章下方）
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#8b1a22';
+        ctx.font = 'bold 90px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText('奖  状', W / 2, 430);
+
+        // 标题装饰（左右菱形）
+        ctx.fillStyle = '#b8232f';
+        ctx.beginPath();
+        ctx.moveTo(W/2 - 200, 430); ctx.lineTo(W/2 - 180, 420); ctx.lineTo(W/2 - 200, 410); ctx.lineTo(W/2 - 220, 420);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(W/2 + 200, 430); ctx.lineTo(W/2 + 220, 420); ctx.lineTo(W/2 + 200, 410); ctx.lineTo(W/2 + 180, 420);
+        ctx.closePath(); ctx.fill();
+
+        // 姓名
+        ctx.fillStyle = '#3d0e0e'; ctx.font = 'bold 54px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学', W / 2, 530);
+
+        // 正文
+        ctx.fillStyle = '#2c1810'; ctx.font = '32px KaiTi, STKaiti, SimSun, serif';
+        const lines = wrapText(ctx, opts.text, W - 400);
+        let y = 630;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 56; });
+
+        // 落款
+        ctx.textAlign = 'right'; ctx.font = '28px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#8b1a22';
+        if (opts.signature) ctx.fillText(opts.signature, W - 180, H - 180);
+        if (opts.date) ctx.fillText(opts.date, W - 180, H - 135);
+
+        // 印章
+        drawSeal(ctx, W - 300, H - 155, 70, '#b8232f');
+    }
+
+    // 大勋章
+    function drawBigMedal(ctx, cx, cy, r) {
+        // 外圈红
+        const g1 = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, 10, cx, cy, r);
+        g1.addColorStop(0, '#e74c4c');
+        g1.addColorStop(1, '#8b1a22');
+        ctx.fillStyle = g1;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
+        // 金环
+        ctx.strokeStyle = '#c9a961'; ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.arc(cx, cy, r - 4, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, r - 30, 0, Math.PI * 2); ctx.stroke();
+
+        // 边缘小圆点（像勋章嵌齿）
+        ctx.fillStyle = '#c9a961';
+        for (let i = 0; i < 24; i++) {
+            const a = (Math.PI * 2 / 24) * i;
+            const x = cx + Math.cos(a) * (r - 16);
+            const y = cy + Math.sin(a) * (r - 16);
+            ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // 中央大金星
+        drawStar(ctx, cx, cy, r * 0.55, 5, '#ffd76a');
+        ctx.strokeStyle = '#8b6f3a'; ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 五角星上的小圆
+        ctx.fillStyle = '#ffd76a';
+        ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#8b6f3a'; ctx.stroke();
+    }
+
+    // 缎带
+    function drawRibbon(ctx, x, y, angle, color1, color2) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle * Math.PI / 180);
+
+        const w = 40, h = 200;
+        // 缎带主体
+        const g = ctx.createLinearGradient(-w/2, 0, w/2, 0);
+        g.addColorStop(0, color2);
+        g.addColorStop(0.5, color1);
+        g.addColorStop(1, color2);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(-w/2, 0);
+        ctx.lineTo(w/2, 0);
+        ctx.lineTo(w/2, h - 30);
+        ctx.lineTo(0, h - 50);
+        ctx.lineTo(-w/2, h - 30);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = color2; ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // ========== 左右分栏（横版，左侧深蓝色块 + 右侧内容） ==========
+    function drawSplit(ctx, W, H, opts) {
+        // 右侧米黄底
+        ctx.fillStyle = '#fbf7ee'; ctx.fillRect(0, 0, W, H);
+
+        // 左侧深蓝色块（约 40% 宽）
+        const leftW = W * 0.4;
+        const g = ctx.createLinearGradient(0, 0, leftW, H);
+        g.addColorStop(0, '#1a3a5c');
+        g.addColorStop(1, '#0d1f33');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, leftW, H);
+
+        // 左侧金色细边
+        ctx.fillStyle = '#c9a961'; ctx.fillRect(leftW - 6, 0, 6, H);
+
+        // 左侧装饰：画一个抽象的"笔+书+星"组合
+        drawLeftPanelArt(ctx, leftW / 2, H / 2, leftW * 0.6);
+
+        // 左侧竖排文字"荣誉"
+        ctx.save();
+        ctx.translate(leftW / 2, H / 2);
+        ctx.fillStyle = '#c9a961';
+        ctx.font = 'bold 80px KaiTi, STKaiti, SimSun, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('荣', 0, -60);
+        ctx.fillText('誉', 0, 30);
+        ctx.restore();
+
+        // ===== 右侧内容 =====
+        const rightCX = leftW + (W - leftW) / 2;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+        // 标题
+        ctx.fillStyle = '#1a3a5c'; ctx.font = 'bold 90px Microsoft YaHei, sans-serif';
+        ctx.fillText('荣誉证书', rightCX, 160);
+
+        // 金色分隔线
+        ctx.strokeStyle = '#c9a961'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(rightCX - 180, 220); ctx.lineTo(rightCX + 180, 220); ctx.stroke();
+
+        // 姓名
+        ctx.fillStyle = '#1a3a5c'; ctx.font = 'bold 62px Microsoft YaHei, sans-serif';
+        ctx.fillText(opts.name, rightCX, 340);
+
+        // 姓名下的横线（下划线）
+        ctx.strokeStyle = '#1a3a5c'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(rightCX - 140, 380); ctx.lineTo(rightCX + 140, 380); ctx.stroke();
+
+        // "同学"小字
+        ctx.fillStyle = '#5d6d7e'; ctx.font = '24px Microsoft YaHei, sans-serif';
+        ctx.fillText('同  学', rightCX + 200, 355);
+
+        // 正文
+        ctx.fillStyle = '#2c3e50'; ctx.font = '30px Microsoft YaHei, sans-serif';
+        const lines = wrapText(ctx, opts.text, W - leftW - 200);
+        let y = 490;
+        lines.forEach(line => { ctx.fillText(line, rightCX, y); y += 54; });
+
+        // 落款
+        ctx.textAlign = 'right'; ctx.font = '26px Microsoft YaHei, sans-serif'; ctx.fillStyle = '#1a3a5c';
+        if (opts.signature) ctx.fillText(opts.signature, W - 120, H - 180);
+        if (opts.date) ctx.fillText(opts.date, W - 120, H - 140);
+
+        // 印章
+        drawSeal(ctx, W - 260, H - 160, 68, '#b8232f');
+    }
+
+    // 左侧抽象装饰：书本 + 笔 + 星星
+    function drawLeftPanelArt(ctx, cx, cy, size) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(201,169,97,0.3)';
+        ctx.fillStyle = 'rgba(201,169,97,0.15)';
+        ctx.lineWidth = 2;
+
+        // 圆环背景
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.75, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 环上的小圆点
+        for (let i = 0; i < 12; i++) {
+            const a = (Math.PI * 2 / 12) * i;
+            ctx.beginPath();
+            ctx.arc(cx + Math.cos(a) * size * 0.75, cy + Math.sin(a) * size * 0.75, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 中央一个五角星
+        drawStar(ctx, cx, cy, size * 0.35, 5, 'rgba(201,169,97,0.35)');
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // ========== 扇面金榜（竖版，顶部半圆扇面 + 扇骨放射） ==========
+    function drawFan(ctx, W, H, opts) {
+        // 顶部米色底
+        const bg = ctx.createLinearGradient(0, 0, 0, H);
+        bg.addColorStop(0, '#f5e9d0');
+        bg.addColorStop(1, '#faf3e0');
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+        // ===== 顶部扇面 =====
+        const fanCX = W / 2;
+        const fanCY = 380;   // 扇面中心点（扇子打开的原点）
+        const fanR = 300;    // 扇面半径
+        const startAngle = -Math.PI * 0.9;
+        const endAngle = -Math.PI * 0.1;
+        const numRibs = 10;
+
+        // 扇面底色（深紫色）
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(fanCX, fanCY);
+        ctx.arc(fanCX, fanCY, fanR, startAngle, endAngle);
+        ctx.closePath();
+        const fanGrad = ctx.createRadialGradient(fanCX, fanCY, 20, fanCX, fanCY, fanR);
+        fanGrad.addColorStop(0, '#7c3aed');
+        fanGrad.addColorStop(1, '#4c1d95');
+        ctx.fillStyle = fanGrad; ctx.fill();
+        ctx.strokeStyle = '#c9a961'; ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 扇骨（放射线）
+        ctx.strokeStyle = 'rgba(201,169,97,0.5)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i <= numRibs; i++) {
+            const a = startAngle + (endAngle - startAngle) * (i / numRibs);
+            ctx.beginPath();
+            ctx.moveTo(fanCX, fanCY);
+            ctx.lineTo(fanCX + Math.cos(a) * fanR, fanCY + Math.sin(a) * fanR);
+            ctx.stroke();
+        }
+
+        // 扇面上画金色装饰（每格一个小花）
+        for (let i = 0; i < numRibs; i++) {
+            const a = startAngle + (endAngle - startAngle) * ((i + 0.5) / numRibs);
+            const x = fanCX + Math.cos(a) * fanR * 0.75;
+            const y = fanCY + Math.sin(a) * fanR * 0.75;
+            drawStar(ctx, x, y, 8, 4, '#c9a961');
+        }
+
+        // 扇面中央大"奖"字
+        ctx.fillStyle = '#ffd76a';
+        ctx.font = 'bold 150px KaiTi, STKaiti, SimSun, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('奖', fanCX, fanCY - fanR * 0.4);
+
+        ctx.restore();
+
+        // ===== 扇柄流苏 =====
+        ctx.fillStyle = '#8b6f3a';
+        ctx.fillRect(fanCX - 6, fanCY, 12, 40);
+        // 流苏
+        ctx.strokeStyle = '#c9a961'; ctx.lineWidth = 2;
+        for (let i = -3; i <= 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(fanCX + i * 5, fanCY + 40);
+            ctx.lineTo(fanCX + i * 8, fanCY + 80);
+            ctx.stroke();
+        }
+
+        // 外框
+        ctx.strokeStyle = '#6d28d9'; ctx.lineWidth = 3; ctx.strokeRect(30, 30, W - 60, H - 60);
+        ctx.strokeStyle = 'rgba(109,40,217,0.4)'; ctx.lineWidth = 1; ctx.strokeRect(46, 46, W - 92, H - 92);
+
+        // 标题（扇面下方）
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#4c1d95'; ctx.font = 'bold 78px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText('金榜题名', W / 2, fanCY + 130);
+
+        // 姓名
+        ctx.fillStyle = '#2d1b69'; ctx.font = 'bold 56px KaiTi, STKaiti, SimSun, serif';
+        ctx.fillText(opts.name + '  同学', W / 2, fanCY + 220);
+
+        // 正文
+        ctx.fillStyle = '#3d2b6a'; ctx.font = '32px KaiTi, STKaiti, SimSun, serif';
+        const lines = wrapText(ctx, opts.text, W - 220);
+        let y = fanCY + 310;
+        lines.forEach(line => { ctx.fillText(line, W / 2, y); y += 56; });
+
+        // 落款
+        ctx.textAlign = 'right'; ctx.font = '28px KaiTi, STKaiti, SimSun, serif'; ctx.fillStyle = '#4c1d95';
+        if (opts.signature) ctx.fillText(opts.signature, W - 140, H - 200);
+        if (opts.date) ctx.fillText(opts.date, W - 140, H - 155);
+
+        // 印章
+        drawSeal(ctx, W - 240, H - 175, 70, '#6d28d9');
+    }
+
+    // ==================== 通用绘制工具 ====================
+    function drawRoundRect(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+    }
+    function drawStar(ctx, cx, cy, r, points, color) {
+        ctx.fillStyle = color; ctx.beginPath();
+        for (let i = 0; i < points * 2; i++) {
+            const radius = i % 2 === 0 ? r : r * 0.4;
+            const angle = (Math.PI / points) * i - Math.PI / 2;
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath(); ctx.fill();
+    }
+    function ellipseByBezier(ctx, cx, cy, rx, ry) {
+        const k = 0.5522848, ox = rx * k, oy = ry * k;
+        ctx.moveTo(cx - rx, cy);
+        ctx.bezierCurveTo(cx - rx, cy - oy, cx - ox, cy - ry, cx, cy - ry);
+        ctx.bezierCurveTo(cx + ox, cy - ry, cx + rx, cy - oy, cx + rx, cy);
+        ctx.bezierCurveTo(cx + rx, cy + oy, cx + ox, cy + ry, cx, cy + ry);
+        ctx.bezierCurveTo(cx - ox, cy + ry, cx - rx, cy + oy, cx - rx, cy);
+    }
+    function wrapText(ctx, text, maxWidth) {
+        if (!text) return [];
+        const lines = [];
+        text.split('\n').forEach(para => {
+            if (!para) { lines.push(''); return; }
+            let current = '';
+            for (let i = 0; i < para.length; i++) {
+                const test = current + para[i];
+                if (ctx.measureText(test).width > maxWidth && current) {
+                    lines.push(current); current = para[i];
+                } else {
+                    current = test;
+                }
+            }
+            if (current) lines.push(current);
+        });
+        return lines;
+    }
+
+    // ==================== 印章 ====================
+    function drawSeal(ctx, cx, cy, r, color) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(-0.05);
+        ctx.strokeStyle = color; ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(0, 0, r - 6, 0, Math.PI * 2); ctx.stroke();
+        drawCircularText(ctx, SEAL_RING_TEXT, r - 16, r * 0.16, color);
+        if (sealImage) {
+            const size = (r - 38) * 2;
+            try { drawColoredImage(ctx, sealImage, 0, 0, size, color); }
+            catch(e) { drawSealChar(ctx, color, r); }
+        } else {
+            drawSealChar(ctx, color, r);
+        }
+        ctx.restore();
+    }
+    function drawColoredImage(ctx, img, cx, cy, size, color) {
+        const DPR = 3;
+        const pxSize = Math.round(size * DPR);
+        const off = document.createElement('canvas');
+        off.width = pxSize; off.height = pxSize;
+        const octx = off.getContext('2d');
+        const imgW = img.naturalWidth || img.width || 100;
+        const imgH = img.naturalHeight || img.height || 100;
+        const aspect = imgW / imgH;
+        let drawW, drawH, offsetX, offsetY;
+        if (aspect > 1) {
+            drawW = pxSize; drawH = pxSize / aspect;
+            offsetX = 0; offsetY = (pxSize - drawH) / 2;
+        } else {
+            drawH = pxSize; drawW = pxSize * aspect;
+            offsetX = (pxSize - drawW) / 2; offsetY = 0;
+        }
+        octx.drawImage(img, offsetX, offsetY, drawW, drawH);
+        octx.globalCompositeOperation = 'source-in';
+        octx.fillStyle = color;
+        octx.fillRect(0, 0, pxSize, pxSize);
+        ctx.drawImage(off, cx - size / 2, cy - size / 2, size, size);
+    }
+    function drawSealChar(ctx, color, r) {
+        ctx.fillStyle = color;
+        const fs = Math.min(54, r * 0.85);
+        ctx.font = 'bold ' + fs + 'px KaiTi, STKaiti, SimSun, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('奖', 0, 2);
+    }
+    function drawCircularText(ctx, text, radius, fontSize, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.font = 'bold ' + Math.round(fontSize) + 'px KaiTi, STKaiti, SimSun, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const chars = String(text).split('');
+        const n = chars.length;
+        if (n === 0) { ctx.restore(); return; }
+        const angleStep = (Math.PI * 2) / n, startAngle = -Math.PI / 2;
+        for (let i = 0; i < n; i++) {
+            const angle = startAngle + angleStep * i;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(angle + Math.PI / 2);
+            ctx.fillText(chars[i], 0, 0);
+            ctx.restore();
+        }
+        ctx.restore();
+    }
+
+    function downloadCertificate() {
+        const canvas = $('certCanvas');
+        const name = $('certName').value.trim() || '同学';
+        try {
+            canvas.toBlob(function(blob) {
+                if (!blob) { showToast('❌ 生成图片失败', 'error'); return; }
+                try {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    const date = new Date().toISOString().slice(0, 10);
+                    a.href = url;
+                    a.download = '奖状_' + name + '_' + date + '.png';
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    showToast('📥 已下载', 'success');
+                } catch(e) {
+                    showToast('❌ 下载失败：' + (e.message || '未知'), 'error');
+                }
+            }, 'image/png');
+        } catch(e) {
+            console.error('[toBlob 失败]', e);
+            showToast('❌ 导出失败', 'error');
+        }
+    }
+    async function copyCertificate() {
+        if (location.protocol === 'file:') {
+            showToast('❌ file:// 下不支持复制图片，请用"下载 PNG"', 'error');
+            return;
+        }
+        if (!navigator.clipboard || !window.ClipboardItem) {
+            showToast('❌ 浏览器不支持，请用"下载 PNG"', 'error');
+            return;
+        }
+        try {
+            const canvas = $('certCanvas');
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(b => b ? resolve(b) : reject(new Error('生成失败')), 'image/png');
+            });
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            showToast('✅ 已复制，可粘贴到微信/Word', 'success');
+        } catch(e) {
+            console.error('[复制失败]', e);
+            showToast('❌ 复制失败，请用"下载 PNG"', 'error');
+        }
+    }
+
+    function openRecordsModal() { renderRecordList(); $('recordsModal').classList.add('open'); }
+    function closeRecordsModal() { $('recordsModal').classList.remove('open'); }
+    function renderRecordList() {
+        const list = $('recordList');
+        list.innerHTML = '';
+        if (records.length === 0) {
+            list.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#475569;font-size:13px;">还没有兑换记录</div>';
+            return;
+        }
+        records.forEach(r => {
+            let detail = '-';
+            if (Array.isArray(r.plan)) {
+                detail = r.plan.filter(p => p.deduct > 0).map(p => {
+                    const tag = p.role === 'fallback' ? '(替)' : '';
+                    return p.currency + '-' + p.deduct.toFixed(1) + tag;
+                }).join(' ');
+            } else if (r.currency) {
+                detail = r.currency + '-' + (r.cost || 0);
+            }
+            const costStr = r.totalCost !== undefined ? r.totalCost.toFixed(1) : (r.cost || 0);
+            const row = document.createElement('div');
+            row.className = 'record-row';
+            row.innerHTML = `
+                <span class="icon">${r.itemIcon || '🎁'}</span>
+                <div class="info">
+                    <div class="main"><strong>${escapeHtml(r.studentName)}</strong> 兑换了 ${escapeHtml(r.itemName)}</div>
+                    <div class="time">${fmtTime(r.ts)} · ${escapeHtml(detail)}</div>
+                </div>
+                <div class="cost">-${costStr}</div>`;
+            list.appendChild(row);
+        });
+    }
+    function clearRecords() {
+        if (records.length === 0) { showToast('没有记录', 'error'); return; }
+        if (!confirm('清空所有兑换记录？\n（分数不会被恢复）')) return;
+        records = [];
+        saveRecords(); renderRecordList(); updateCounts();
+        showToast('✅ 已清空', 'success');
+    }
+
+    function initFilter() {
+        document.querySelectorAll('.filter-group button').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.filter-group button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderItems();
+            };
+        });
+    }
+
+    async function init() {
+        $('classBadge').innerHTML = '🏫 班级：<strong>' + escapeHtml(CURRENT_CLASS) + '</strong>';
+        loadItems();
+        ensureDefaultItems();
+        loadRecords();
+        loadStudents();
+        await loadSealImage();
+
+        initFilter();
+        initSortGroup();
+        renderItems();
+        updateCounts();
+
+        ['certName', 'certText', 'certSignature', 'certDate'].forEach(id => {
+            const el = $(id);
+            if (el) el.addEventListener('input', () => {
+                try { updateCertificatePreview(); } catch(e) {}
+            });
+        });
+
+        ['itemModal', 'exchangeModal', 'recordsModal', 'certModal'].forEach(id => {
+            $(id).addEventListener('click', function(e) {
+                if (e.target === this) {
+                    if (id === 'itemModal') closeItemModal();
+                    else if (id === 'exchangeModal') closeExchangeModal();
+                    else if (id === 'recordsModal') closeRecordsModal();
+                    else if (id === 'certModal') closeCertModal();
+                }
+            });
+        });
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                if ($('certModal').classList.contains('open')) closeCertModal();
+                else if ($('itemModal').classList.contains('open')) closeItemModal();
+                else if ($('exchangeModal').classList.contains('open')) closeExchangeModal();
+                else if ($('recordsModal').classList.contains('open')) closeRecordsModal();
+            }
+        });
+
+        console.log('🏪 兑换商店已就绪 | 班级：' + CURRENT_CLASS
+            + ' | 学生：' + students.length + '人 | 商品：' + items.length + '件');
+    }
+
+    window.openItemModal = openItemModal;
+    window.closeItemModal = closeItemModal;
+    window.saveItem = saveItem;
+    window.deleteItem = deleteItem;
+    window.openExchangeModal = openExchangeModal;
+    window.closeExchangeModal = closeExchangeModal;
+    window.doExchange = doExchange;
+    window.filterStudents = filterStudents;
+    window.openRecordsModal = openRecordsModal;
+    window.closeRecordsModal = closeRecordsModal;
+    window.clearRecords = clearRecords;
+    window.closeCertModal = closeCertModal;
+    window.downloadCertificate = downloadCertificate;
+    window.copyCertificate = copyCertificate;
+    window.uploadSealLogo = uploadSealLogo;
+    window.clearSealLogo = clearSealLogo;
+    window.addPaymentGroup = addPaymentGroup;
+    window.filterEmojis = filterEmojis;
+
+    init();
+})();
+</script>
+</body>
+</html>

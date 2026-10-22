@@ -1,0 +1,352 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权，详情请见项目根目录的 LICENSE 文件 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title id="pageTitle">🪑 座次表</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 引入 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="app">
+        <div class="toolbar">
+    <div class="toolbar-left">
+        <button class="toolbar-btn success" onclick="exportData()">📤 导出</button>
+        <div class="file-input-wrap">
+            <button class="toolbar-btn primary">📥 导入CSV</button>
+            <input type="file" accept=".csv" onchange="importCSV(event)">
+        </div>
+        <button class="toolbar-btn warning" onclick="createGroup()">➕ 创建小组</button>
+        <button class="toolbar-btn" id="multiSelectBtn" onclick="toggleMultiSelectMode()">☑️ 多选</button>
+        <button class="toolbar-btn" onclick="resetGroups()">🔄 重置分组</button>
+        <div class="week-reset-wrapper" id="weekResetWrapper" onclick="handleWeekReset(event)">
+            <span class="week-label">第</span>
+            <input type="number" class="week-input" id="weekInput" value="1" min="1" max="99" step="1" onchange="saveWeekNumber()" onclick="event.stopPropagation();" onfocus="this.select();">
+            <span class="week-suffix">周</span>
+            <span class="reset-icon">🧹</span>
+        </div>
+        <button class="change-pwd-btn" onclick="changePassword()">🔑 修改密码</button>
+        <label class="voice-toggle">
+            🔊 <input type="checkbox" id="voiceCheckbox" checked> 语音播报
+        </label>
+        <span style="display:inline-flex; align-items:center; gap:4px;">
+            <button class="toolbar-btn" onclick="zoomGrid(-10)" title="缩小">🔍−</button>
+            <span id="zoomLevelLabel" style="font-size:13px; color:#ffd700; cursor:pointer; min-width:45px; text-align:center;" onclick="zoomGrid(0)" title="重置缩放">100%</span>
+            <button class="toolbar-btn" onclick="zoomGrid(10)" title="放大">🔍+</button>
+        </span>
+        <span style="display:inline-flex; align-items:center; gap:4px;">
+            <button class="toolbar-btn" onclick="switchTheme('dark')" title="深色主题">🌙</button>
+            <button class="toolbar-btn" onclick="switchTheme('light')" title="浅色主题">☀️</button>
+            <button class="toolbar-btn" id="customThemeBtn" title="自定义颜色" style="position:relative;">
+                🎨
+                <input type="color" id="customColorPicker" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;">
+            </button>
+        </span>
+        <button class="toolbar-btn" id="rankingToggleBtn" onclick="toggleRankingBar()" title="点击展开/收起排号设置">📊 排号设置 ▼</button>
+    </div>
+
+    <!-- ★ 右上角 Logo（新增） -->
+    <div style="margin-left: auto; display: flex; align-items: center; flex-shrink: 0;">
+        <a href="home.html" class="back-link" style="color: #6c5ce7; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; justify-content: center;">
+            <img src="logo.svg" alt="logo" style="width:40px; height:40px;">
+        </a>
+    </div>
+</div>
+
+<!-- ★ 排号模式栏（默认折叠，点击工具栏按钮才展开） -->
+<div id="subjectModeHint" style="display:none; align-items:center; gap:10px 16px; flex-wrap:wrap; margin-bottom:12px; padding:8px 14px; background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.25); border-radius:14px;">
+    <span id="subjectModeLabel" style="font-size:14px; color:#ffd700; font-weight:700;">📚 排号模式</span>
+    <span style="display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#ccc;">
+        排号方式
+        <select id="rankingModeSelect" style="background:rgba(0,0,0,0.35); border:1px solid rgba(255,215,0,0.4); color:#fff; border-radius:12px; padding:3px 8px; font-size:13px; outline:none; cursor:pointer; font-family:inherit;">
+            <option value="relative">相对名次</option>
+            <option value="absolute">绝对分数</option>
+        </select>
+    </span>
+    <span id="fullScoreWrap" style="display:none; align-items:center; gap:6px; font-size:13px; color:#ccc;">
+        满分
+        <input type="number" id="fullScoreInput" value="100" min="1" step="1" style="width:70px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,215,0,0.4); color:#ffd700; border-radius:12px; padding:3px 8px; font-size:13px; outline:none; text-align:center; font-family:inherit;">
+    </span>
+    <span id="totalCountWrap" style="display:none; align-items:center; gap:6px; font-size:13px; color:#ccc;">
+        总数
+        <input type="number" id="totalCountInput" value="0" min="1" step="1" style="width:70px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,215,0,0.4); color:#ffd700; border-radius:12px; padding:3px 8px; font-size:13px; outline:none; text-align:center; font-family:inherit;">
+        <span style="font-size:12px; color:#888;">（缺考/无成绩按 0 分计入）</span>
+    </span>
+    <div style="display:inline-flex; align-items:center; gap:10px; margin-left:auto; flex-wrap:wrap;">
+        <div id="orderLegendBar" class="order-legend-bar"></div>
+        <button class="toolbar-btn" onclick="toggleRankingBar()" style="font-size:12px; padding:3px 12px;">收起 ▲</button>
+    </div>
+</div>
+
+        <!-- 教室网格 -->
+        <div class="classroom-grid" id="classroomGrid"></div>
+    </div>
+
+    <!-- 左侧量化面板 -->
+    <div class="side-panel left-panel" id="leftPanel">
+        <div class="panel-header">📊 维度量化</div>
+        <div class="panel-list" id="leftPanelList"></div>
+        <div class="panel-footer">
+            <button class="mode-toggle-btn" id="leftModeBtn">➕ 加分</button>
+        </div>
+    </div>
+
+    <!-- 右侧学科面板 -->
+    <div class="side-panel right-panel" id="rightPanel">
+        <div class="panel-header">📖 学科成绩</div>
+        <div class="panel-list" id="rightPanelList"></div>
+    </div>
+
+    <!-- ===== 小组面板（新布局） ===== -->
+    <div class="group-panel" id="groupPanel">
+        <div class="group-topbar">
+            <div class="group-left">
+                <span class="group-name" id="panelGroupNameText">第1组</span>
+                <span class="group-total" id="panelGroupTotal">总分：0.0</span>
+                <button class="rename-btn" id="panelRenameBtn" title="重命名小组">✏️</button>
+            </div>
+
+            <div class="group-slogan">
+                <span>📢</span>
+                <input type="text" id="panelSloganInput" placeholder="小组口号" maxlength="30">
+            </div>
+
+            <div class="group-right">
+                <button class="nav-btn" id="panelPrevBtn">◀</button>
+                <button class="nav-btn" id="panelNextBtn">▶</button>
+                <button class="panel-close" onclick="closeGroupPanel()">✕</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-item">
+                <div class="chart-label">📊 十维量化</div>
+                <div id="chartQuant"></div>
+            </div>
+            <div class="chart-item">
+                <div class="chart-label">👥 成员个人总分</div>
+                <div id="chartMember"></div>
+            </div>
+            <div class="chart-item">
+                <div class="chart-label">📖 九科成绩</div>
+                <div id="chartSubject"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fx-container" id="fxContainer"></div>
+    <div class="float-toast" id="floatToast"></div>
+
+    <!-- 编辑弹窗 -->
+    <div id="editModal" onclick="closeEditModal(event)">
+        <div class="edit-modal-content" onclick="event.stopPropagation();">
+            <h3 id="editModalTitle">✏️ 编辑学生</h3>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="editName" placeholder="请输入姓名">
+            </div>
+            <div class="form-group">
+                <label>性别</label>
+                <select id="editGender" style="width:100%; padding:8px 12px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:var(--text-primary); font-size:14px; outline:none;">
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>班级职务</label>
+                <input type="text" id="editDuty" placeholder="如班长、学习委员">
+            </div>
+            <div class="form-group">
+                <label>宠物</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="currentPetDisplay" style="font-size:24px;">🐱</span>
+                    <button type="button" class="toolbar-btn" onclick="openPetSelectorInEdit()">选择宠物</button>
+                </div>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="editLeave">
+                <label for="editLeave">休假（勾选后不可编辑）</label>
+            </div>
+            <div class="modal-buttons">
+                <button id="btnDelete" class="toolbar-btn danger" style="display:none;" onclick="deleteStudent()">🗑️ 删除学生</button>
+                <button class="toolbar-btn" onclick="closeEditModal()">取消</button>
+                <button class="toolbar-btn success" onclick="saveStudent()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="dataManager.js"></script>
+    <script src="app.js"></script>
+    <!-- ===== 主题切换脚本（位于 app.js 之后） ===== -->
+    <script>
+        function switchTheme(theme) {
+            clearCustomTheme();
+            document.body.classList.remove('theme-light');
+            if (theme === 'light') {
+                document.body.classList.add('theme-light');
+            }
+            try {
+                var classId = typeof CURRENT_CLASS !== 'undefined' ? CURRENT_CLASS : 'default';
+                localStorage.setItem('seatTheme_' + classId, theme);
+            } catch(e) {}
+        }
+
+        function applyCustomColor(color) {
+            document.body.classList.remove('theme-light');
+            const rgb = hexToRgb(color);
+            const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+            const textColor = brightness > 128 ? '#1e293b' : '#ffffff';
+            const root = document.documentElement;
+            root.style.setProperty('--bg-body', color);
+            root.style.setProperty('--text-primary', textColor);
+            root.style.setProperty('--bg-app', `rgba(${rgb.r},${rgb.g},${rgb.b},0.15)`);
+            root.style.setProperty('--bg-grid', `rgba(${rgb.r},${rgb.g},${rgb.b},0.10)`);
+            root.style.setProperty('--bg-cell', `rgba(${rgb.r},${rgb.g},${rgb.b},0.10)`);
+            root.style.setProperty('--bg-sidepanel', `rgba(${rgb.r},${rgb.g},${rgb.b},0.95)`);
+            root.style.setProperty('--border-app', `rgba(${rgb.r},${rgb.g},${rgb.b},0.25)`);
+            root.style.setProperty('--border-toolbar', `rgba(${rgb.r},${rgb.g},${rgb.b},0.25)`);
+            root.style.setProperty('--border-grid', `rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`);
+            root.style.setProperty('--border-cell', `rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`);
+            root.style.setProperty('--border-sidepanel', `rgba(${rgb.r},${rgb.g},${rgb.b},0.30)`);
+            root.style.setProperty('--bg-toolbar-btn', `rgba(${rgb.r},${rgb.g},${rgb.b},0.12)`);
+            try {
+                var classId = typeof CURRENT_CLASS !== 'undefined' ? CURRENT_CLASS : 'default';
+                localStorage.setItem('seatTheme_' + classId, 'custom');
+                localStorage.setItem('seatCustomColor_' + classId, color);
+            } catch(e) {}
+        }
+
+        function clearCustomTheme() {
+            const vars = [
+                '--bg-body', '--text-primary', '--bg-app', '--bg-grid', '--bg-cell',
+                '--bg-sidepanel', '--border-app', '--border-toolbar', '--border-grid',
+                '--border-cell', '--border-sidepanel', '--bg-toolbar-btn'
+            ];
+            const root = document.documentElement;
+            vars.forEach(v => root.style.removeProperty(v));
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        document.getElementById('customColorPicker').addEventListener('change', function() {
+            applyCustomColor(this.value);
+        });
+
+        (function() {
+            try {
+                var classId = typeof CURRENT_CLASS !== 'undefined' ? CURRENT_CLASS : 'default';
+                var theme = localStorage.getItem('seatTheme_' + classId);
+                if (theme === 'custom') {
+                    var color = localStorage.getItem('seatCustomColor_' + classId);
+                    if (color) {
+                        applyCustomColor(color);
+                        document.getElementById('customColorPicker').value = color;
+                    }
+                } else if (theme === 'light') {
+                    document.body.classList.add('theme-light');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <!-- ===== 排号图例条（1~9 号可自定义名称） ===== -->
+    <script>
+    (function() {
+        'use strict';
+        const params = new URLSearchParams(window.location.search);
+        const CLASS_ID = params.get('classId') || params.get('class')
+                      || localStorage.getItem('currentClassId') || '一班';
+        const STORAGE_KEY = 'seatOrderLabels_' + CLASS_ID;
+        const DEFAULTS = {1:'1号',2:'2号',3:'3号',4:'4号',5:'5号',6:'6号',7:'7号',8:'8号',9:'9号'};
+
+        let labels = Object.assign({}, DEFAULTS);
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const saved = JSON.parse(raw);
+                if (saved && typeof saved === 'object') {
+                    for (let i = 1; i <= 9; i++) {
+                        if (typeof saved[i] === 'string' && saved[i].trim()) labels[i] = saved[i];
+                    }
+                }
+            }
+        } catch(e) {}
+
+        function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(labels)); } catch(e) {} }
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s == null ? '' : String(s);
+            return d.innerHTML;
+        }
+
+        // ===== 座位徽章刷新：让座位右上角显示自定义名称 =====
+        function patchSeatBadges() {
+            document.querySelectorAll('.seat .order-badge').forEach(function(el) {
+                const m = (el.className || '').match(/color-([1-9])/);
+                if (!m) return;
+                const n = parseInt(m[1], 10);
+                const want = String(labels[n] || n);
+                if (el.textContent !== want) el.textContent = want;
+            });
+        }
+        window.refreshSeatOrderBadges = patchSeatBadges;
+
+        // Hook render：每次 app.js 重画网格后，自动应用自定义名称
+        (function hookRender() {
+            const origRender = window.render;
+            if (typeof origRender === 'function') {
+                window.render = function() {
+                    origRender.apply(this, arguments);
+                    patchSeatBadges();
+                };
+            }
+        })();
+
+        function render() {
+            const bar = document.getElementById('orderLegendBar');
+            if (!bar) return;
+            bar.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const item = document.createElement('div');
+                item.className = 'order-legend-item';
+                item.title = '点击改名 · 右键恢复默认\n当前：' + labels[i];
+                item.innerHTML =
+                    '<span class="legend-num color-' + i + '">' + i + '</span>' +
+                    '<span class="legend-label">' + esc(labels[i]) + '</span>';
+
+                item.addEventListener('click', function() {
+                    const input = prompt('修改「' + i + ' 号」的名称\n（颜色不变，仅改文字；留空恢复默认）', labels[i]);
+                    if (input === null) return;
+                    const t = input.trim();
+                    labels[i] = t ? t.slice(0, 8) : DEFAULTS[i];
+                    save(); render(); patchSeatBadges();
+                });
+                item.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    if (!confirm('将「' + i + ' 号」恢复默认名称？')) return;
+                    labels[i] = DEFAULTS[i];
+                    save(); render(); patchSeatBadges();
+                });
+                bar.appendChild(item);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { render(); patchSeatBadges(); });
+        } else {
+            render();
+            patchSeatBadges();
+        }
+    })();
+    </script>
+</body>
+</html>

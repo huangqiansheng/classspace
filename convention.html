@@ -1,0 +1,1801 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权，详情请见项目根目录的 LICENSE 文件 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>📜 班级公约</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js">
+    </script>
+    <style>
+        /* ===== 全局样式 ===== */
+        :root {
+            --bg-dark: #0b0b1a;
+            --bg-card: #12122a;
+            --bg-control: rgba(16, 16, 36, 0.88);
+            --text-primary: #f0f0ff;
+            --text-muted: #8888aa;
+            --text-dim: #555577;
+            --accent: #6c7cff;
+            --accent-glow: rgba(108, 124, 255, 0.25);
+            --radius: 16px;
+            --transition: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            background: var(--bg-dark);
+            overflow: hidden;
+        }
+
+        /* ===== 顶部栏 ===== */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px;
+            background: rgba(11, 11, 26, 0.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            flex-shrink: 0;
+            z-index: 10;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            min-height: 50px;
+        }
+        .topbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: -0.2px;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .topbar .brand span {
+            color: var(--accent);
+        }
+        .topbar .brand .icon {
+            font-size: 20px;
+        }
+        .topbar .actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .topbar .actions .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+        }
+        .topbar .actions .btn:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+        .topbar .actions .btn.active {
+            background: rgba(108, 124, 255, 0.18);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .topbar .actions .btn.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .topbar .actions .btn.primary:hover {
+            background: #5a6ae8;
+            border-color: #5a6ae8;
+        }
+        .topbar .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .topbar .progress-info strong {
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        .topbar .progress-info .divider {
+            opacity: 0.2;
+        }
+
+        /* ===== 主区域 ===== */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            min-height: 0;
+        }
+
+        /* ===== 编辑面板 ===== */
+        .edit-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 16px 16px;
+            background: var(--bg-dark);
+            overflow: hidden;
+            min-height: 0;
+        }
+        .edit-panel.hidden {
+            display: none;
+        }
+        .edit-panel .editor-wrap {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+            min-height: 0;
+        }
+        .edit-panel .editor-wrap textarea {
+            flex: 1;
+            width: 100%;
+            padding: 14px 18px;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.8;
+            font-family: 'Inter', monospace;
+            resize: none;
+            outline: none;
+            min-height: 100px;
+            tab-size: 2;
+        }
+        .edit-panel .editor-wrap textarea::placeholder {
+            color: var(--text-dim);
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+        .edit-panel .editor-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .edit-panel .editor-toolbar .hint {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .edit-panel .editor-toolbar .hint .tag {
+            background: rgba(108, 124, 255, 0.12);
+            color: var(--accent);
+            padding: 1px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .edit-panel .editor-toolbar .hint .tag-mark {
+            background: rgba(108, 124, 255, 0.08);
+            color: var(--text-muted);
+            padding: 1px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+        .edit-panel .drop-zone {
+            margin-top: 10px;
+            padding: 14px;
+            border: 2px dashed rgba(255, 255, 255, 0.06);
+            border-radius: var(--radius);
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 12px;
+            transition: all 0.25s;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            flex-shrink: 0;
+        }
+        .edit-panel .drop-zone:hover {
+            border-color: rgba(108, 124, 255, 0.25);
+            background: rgba(108, 124, 255, 0.04);
+        }
+        .edit-panel .drop-zone.dragover {
+            border-color: var(--accent);
+            background: rgba(108, 124, 255, 0.08);
+        }
+        .edit-panel .drop-zone .icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* ===== 展示面板 ===== */
+        .display-panel {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            background: var(--bg-dark);
+            overflow: hidden;
+            position: relative;
+            min-height: 0;
+        }
+        .display-panel.active {
+            display: flex;
+        }
+
+        .title-area {
+            flex-shrink: 0;
+            padding: 8px 24px 6px;
+            background: rgba(0, 0, 0, 0.35);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60px;
+            gap: 2px;
+        }
+        .title-area .main-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 20px var(--accent-glow);
+            letter-spacing: 0.5px;
+            text-align: center;
+            width: 100%;
+        }
+        .title-area .main-title.empty {
+            color: var(--text-dim);
+            font-weight: 400;
+            font-size: 1.2rem;
+            text-shadow: none;
+        }
+        .title-area .sub-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-align: left;
+            width: 100%;
+            padding-left: 8px;
+        }
+        .title-area .sub-title.empty {
+            color: var(--text-dim);
+            font-weight: 300;
+            font-size: 0.9rem;
+        }
+
+        .display-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 20px 12px;
+            overflow: hidden;
+            min-height: 0;
+            position: relative;
+            background: radial-gradient(ellipse at center, #12122a 0%, #080816 100%);
+        }
+        .display-stage .lines-container {
+            width: 100%;
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 0;
+            flex: 1;
+            min-height: 0;
+        }
+        .display-stage .line-item {
+            width: 100%;
+            text-align: center;
+            transition: all var(--transition);
+            padding: 2px 6px;
+            word-break: break-word;
+            line-height: 1.5;
+            flex-shrink: 0;
+        }
+        .display-stage .line-item.context {
+            font-size: 1.0rem;
+            color: var(--text-dim);
+            opacity: 0.45;
+            transform: scale(0.92);
+            font-weight: 400;
+            max-height: 3.2em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .display-stage .line-item.context-2 {
+            font-size: 0.85rem;
+            opacity: 0.25;
+            transform: scale(0.86);
+        }
+        .display-stage .line-item.context-1 {
+            font-size: 0.95rem;
+            opacity: 0.40;
+            transform: scale(0.90);
+        }
+        .display-stage .line-item.current {
+            font-size: 3.0rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 40px var(--accent-glow), 0 2px 20px rgba(0, 0, 0, 0.4);
+            padding: 10px 0;
+            transform: scale(1);
+            opacity: 1;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+        }
+        .display-stage .line-item.current.empty {
+            color: var(--text-dim);
+            font-weight: 400;
+            font-size: 2.0rem;
+            text-shadow: none;
+        }
+        .display-stage .line-item.current.speaking {
+            text-shadow: 0 0 60px rgba(108, 124, 255, 0.5), 0 0 120px rgba(108, 124, 255, 0.15);
+        }
+        .display-stage .empty-state {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        .display-stage .stage-progress {
+            position: absolute;
+            bottom: 12px;
+            right: 22px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.12);
+            font-weight: 500;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 14px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            pointer-events: none;
+            user-select: none;
+        }
+        .display-stage .stage-progress strong {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .display-stage .speech-indicator {
+            position: absolute;
+            top: 12px;
+            right: 22px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 12px 2px 10px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            opacity: 0;
+            transition: opacity 0.4s;
+            pointer-events: none;
+        }
+        .display-stage .speech-indicator.visible {
+            opacity: 1;
+        }
+        .display-stage .speech-indicator .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* ===== 底部控制栏 ===== */
+        .control-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 18px;
+            background: var(--bg-control);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            min-height: 50px;
+            z-index: 10;
+        }
+        .control-bar .left,
+        .control-bar .right {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .control-bar .center {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .control-bar .btn-ctrl {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .control-bar .btn-ctrl:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .control-bar .btn-ctrl:disabled {
+            opacity: 0.25;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .control-bar .btn-ctrl.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .control-bar .btn-ctrl.primary:hover {
+            background: #5a6ae8;
+            border-color: #5a6ae8;
+        }
+        .control-bar .btn-ctrl.primary:disabled {
+            opacity: 0.4;
+        }
+        .control-bar .btn-ctrl.loop-active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(108, 124, 255, 0.12);
+        }
+        .control-bar .speed-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 2px 12px 2px 14px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .control-bar .speed-group label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .control-bar .speed-group input[type="range"] {
+            width: 100px;
+            accent-color: var(--accent);
+            cursor: pointer;
+            background: transparent;
+            height: 3px;
+        }
+        .control-bar .speed-group .speed-val {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 36px;
+            text-align: center;
+        }
+        .control-bar .progress-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 2px 14px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            white-space: nowrap;
+        }
+        .control-bar .progress-text strong {
+            color: var(--text-primary);
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(16px);
+            background: rgba(16, 16, 36, 0.94);
+            backdrop-filter: blur(16px);
+            color: #fff;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+            z-index: 999;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== 滚动条 ===== */
+        ::-webkit-scrollbar {
+            width: 3px;
+            height: 3px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-dim);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* ===== 响应式（精简） ===== */
+        @media (max-width: 820px) {
+            .topbar { padding: 6px 12px; min-height: 44px; }
+            .topbar .brand { font-size: 14px; }
+            .topbar .brand .icon { font-size: 17px; }
+            .topbar .actions .btn { font-size: 11px; padding: 3px 9px; }
+            .topbar .progress-info { font-size: 11px; gap: 6px; }
+            .display-stage .line-item.current { font-size: 2.2rem; }
+            .display-stage .line-item.context { font-size: 0.85rem; }
+            .display-stage .line-item.context-2 { font-size: 0.72rem; }
+            .display-stage .line-item.context-1 { font-size: 0.8rem; }
+            .display-stage { padding: 6px 12px; }
+            .title-area { padding: 6px 14px 4px; min-height: 50px; }
+            .title-area .main-title { font-size: 1.3rem; }
+            .title-area .sub-title { font-size: 0.95rem; }
+            .control-bar { padding: 6px 12px; min-height: 44px; }
+            .control-bar .btn-ctrl { width: 32px; height: 32px; font-size: 13px; }
+            .control-bar .speed-group input[type="range"] { width: 70px; }
+            .control-bar .speed-group { padding: 2px 8px 2px 10px; }
+            .control-bar .progress-text { font-size: 11px; padding: 2px 10px; }
+            .edit-panel { padding: 8px 10px 12px; }
+            .edit-panel .editor-wrap textarea { font-size: 13px; padding: 10px 14px; }
+            .display-stage .stage-progress { bottom: 8px; right: 14px; font-size: 10px; padding: 2px 10px; }
+            .display-stage .speech-indicator { top: 8px; right: 14px; font-size: 10px; padding: 2px 8px 2px 6px; }
+            .toast { bottom: 60px; font-size: 12px; padding: 6px 18px; }
+        }
+        @media (max-width: 480px) {
+            .topbar .brand { font-size: 12px; }
+            .topbar .progress-info { font-size: 10px; gap: 4px; }
+            .topbar .actions .btn { font-size: 10px; padding: 2px 7px; }
+            .display-stage .line-item.current { font-size: 1.6rem; }
+            .display-stage .line-item.context { font-size: 0.7rem; }
+            .display-stage .line-item.context-2 { font-size: 0.6rem; }
+            .display-stage .line-item.context-1 { font-size: 0.65rem; }
+            .display-stage { padding: 4px 6px; }
+            .title-area { padding: 4px 8px 2px; min-height: 44px; }
+            .title-area .main-title { font-size: 1.1rem; }
+            .title-area .sub-title { font-size: 0.85rem; }
+            .control-bar { padding: 4px 8px; gap: 4px; }
+            .control-bar .btn-ctrl { width: 28px; height: 28px; font-size: 11px; }
+            .control-bar .speed-group input[type="range"] { width: 50px; }
+            .control-bar .speed-group { padding: 2px 4px 2px 6px; gap: 4px; }
+            .control-bar .speed-group label { font-size: 10px; }
+            .control-bar .speed-group .speed-val { font-size: 11px; min-width: 28px; }
+            .control-bar .progress-text { font-size: 10px; padding: 2px 8px; }
+            .edit-panel .editor-wrap textarea { font-size: 12px; padding: 8px 10px; }
+            .edit-panel .editor-toolbar { font-size: 11px; padding: 4px 10px; }
+            .edit-panel .drop-zone { font-size: 11px; padding: 10px; }
+            .display-stage .stage-progress { bottom: 4px; right: 10px; font-size: 9px; padding: 2px 8px; }
+            .display-stage .speech-indicator { top: 4px; right: 10px; font-size: 9px; padding: 2px 6px 2px 4px; }
+            .toast { bottom: 50px; font-size: 11px; padding: 4px 14px; }
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="app" id="app">
+
+   <!-- ===== 顶部栏 ===== -->
+<header class="topbar" id="topbar">
+    <div class="brand">
+        <span class="icon">📄</span>
+        <span>逐行<span>展示</span></span>
+    </div>
+    <div class="actions">
+        <button class="btn" id="importBtn">📂 导入</button>
+        <input type="file" id="fileInput" accept=".docx,.txt" style="display:none" />
+        <!-- ★ 展示按钮（已恢复） ★ -->
+        <button class="btn" id="toggleModeBtn">▶ 展示</button>
+        <button class="btn" id="resetBtn">↺ 重置</button>
+        <button class="btn" id="speechToggle" title="语音播报当前行">
+            🔊 <span id="speechLabel">语音</span>
+        </button>
+        <!-- 进度信息（从右侧移到按钮后面） -->
+        <span class="progress-info" style="display:inline-flex; align-items:center; gap:6px; margin-left:8px; font-size:12px; color:var(--text-muted); font-weight:500;">
+            <span><strong id="topCurrent" style="color:var(--text-primary); font-size:14px;">0</strong> <span class="divider" style="opacity:0.2;">/</span> <span id="topTotal" style="color:var(--text-primary); font-size:14px;">0</span></span>
+            <span class="divider" style="opacity:0.2;">|</span>
+            <span id="topFileName" style="color:var(--text-dim);font-weight:400;">未命名</span>
+        </span>
+    </div>
+    <!-- Logo 移到右侧（独立于 actions 之外） -->
+    <a href="home.html" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none; margin-left: auto; flex-shrink: 0;">
+        <img src="logo.svg" alt="logo" style="width:40px; height:40px;">
+    </a>
+</header>
+
+        <!-- ===== 主区域 ===== -->
+        <div class="main-area">
+
+            <!-- 编辑面板 -->
+            <div class="edit-panel" id="editPanel">
+                <div class="editor-wrap">
+                    <textarea id="editor" placeholder="使用 # 标记主标题，## 标记副标题（支持半角/全角）&#10;例如：&#10;# 第一章 引言&#10;## 1.1 研究背景&#10;这是正文内容……"></textarea>
+                    <div class="editor-toolbar">
+                        <span class="hint">
+                            <span>📝 <strong id="lineCountEdit">0</strong> 行</span>
+                            <span class="tag">手动标记</span>
+                            <span class="tag-mark"># 主标题</span>
+                            <span class="tag-mark">## 副标题</span>
+                        </span>
+                        <span id="fileInfo" style="color:var(--text-dim);">未导入文件</span>
+                    </div>
+                </div>
+                <div class="drop-zone" id="dropZone">
+                    <span class="icon">📤</span>
+                    <div>拖拽 <strong>.docx</strong> 或 <strong>.txt</strong> 到此处 · 或点击上方「导入」</div>
+                </div>
+            </div>
+
+            <!-- 展示面板 -->
+            <div class="display-panel" id="displayPanel">
+                <div class="title-area" id="titleArea">
+                    <div class="main-title empty" id="mainTitleDisplay">📌 无主标题</div>
+                    <div class="sub-title empty" id="subTitleDisplay">📌 无副标题</div>
+                </div>
+                <div class="display-stage" id="displayStage">
+                    <div class="lines-container" id="linesContainer"></div>
+                    <div class="stage-progress" id="stageProgress">0 / 0</div>
+                    <div class="speech-indicator" id="speechIndicator">
+                        <span class="dot"></span> 朗读中
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 底部控制栏 ===== -->
+        <div class="control-bar" id="controlBar">
+            <div class="left">
+                <button class="btn-ctrl" id="prevBtn" title="上一行">◀</button>
+                <button class="btn-ctrl primary" id="playBtn" title="播放 / 暂停">▶</button>
+                <button class="btn-ctrl" id="nextBtn" title="下一行">▶</button>
+                <button class="btn-ctrl" id="goTopBtn" title="回到开头">↑</button>
+                <button class="btn-ctrl" id="loopBtn" title="循环播放">🔁</button>
+            </div>
+            <div class="center">
+                <div class="speed-group">
+                    <label>🐢</label>
+                    <input type="range" id="speedSlider" min="0.3" max="3.0" step="0.1" value="1.0" />
+                    <label>🐇</label>
+                    <span class="speed-val" id="speedDisplay">1.0×</span>
+                </div>
+            </div>
+            <div class="right">
+                <span class="progress-text">
+                    <strong id="bottomCurrent">0</strong> / <span id="bottomTotal">0</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Toast ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // =============================================================
+            // 【修改1】读取当前班级（从 URL 参数），用于数据隔离
+            // =============================================================
+            const urlParams = new URLSearchParams(window.location.search);
+           const CURRENT_CLASS = urlParams.get('classId') || urlParams.get('class') || localStorage.getItem('currentClassId') || '一班';
+            // 所有存储 key 都加上班级前缀
+            const STORAGE_KEY = 'wordDisplay_state_' + CURRENT_CLASS;
+            // =============================================================
+
+            // ========== DOM 引用 ==========
+            const editor = document.getElementById('editor');
+            const fileInput = document.getElementById('fileInput');
+            const importBtn = document.getElementById('importBtn');
+            const dropZone = document.getElementById('dropZone');
+            const toggleModeBtn = document.getElementById('toggleModeBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const speechToggle = document.getElementById('speechToggle');
+            const speechLabel = document.getElementById('speechLabel');
+            const editPanel = document.getElementById('editPanel');
+            const displayPanel = document.getElementById('displayPanel');
+            const linesContainer = document.getElementById('linesContainer');
+            const stageProgress = document.getElementById('stageProgress');
+            const speechIndicator = document.getElementById('speechIndicator');
+            const mainTitleDisplay = document.getElementById('mainTitleDisplay');
+            const subTitleDisplay = document.getElementById('subTitleDisplay');
+            const prevBtn = document.getElementById('prevBtn');
+            const playBtn = document.getElementById('playBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const goTopBtn = document.getElementById('goTopBtn');
+            const loopBtn = document.getElementById('loopBtn');
+            const speedSlider = document.getElementById('speedSlider');
+            const speedDisplay = document.getElementById('speedDisplay');
+            const topCurrent = document.getElementById('topCurrent');
+            const topTotal = document.getElementById('topTotal');
+            const topFileName = document.getElementById('topFileName');
+            const bottomCurrent = document.getElementById('bottomCurrent');
+            const bottomTotal = document.getElementById('bottomTotal');
+            const lineCountEdit = document.getElementById('lineCountEdit');
+            const fileInfo = document.getElementById('fileInfo');
+            const toast = document.getElementById('toast');
+
+            // ========== 状态 ==========
+            const state = {
+                allItems: [],
+                contentItems: [],
+                currentAllIndex: 0,
+                currentContentIndex: 0,
+                isPlaying: false,
+                isPaused: false,
+                speed: 1.0,
+                isDisplayMode: false,
+                fileName: '未命名',
+                speechEnabled: false,
+                isSpeaking: false,
+                isLooping: false,
+                timer: null,
+                timerDone: false,
+                speechDone: false,
+                waitingForSwitch: false,
+            };
+
+            // ========== 工具 ==========
+            function showToast(msg, duration) {
+                duration = duration || 2000;
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(toast._hide);
+                toast._hide = setTimeout(() => toast.classList.remove('show'), duration);
+            }
+
+            function getLineTime(line) {
+                const base = 0.6;
+                const perChar = 0.14;
+                const len = line.length;
+                const raw = base + len * perChar;
+                if (len === 0) return 0.3 / state.speed;
+                return Math.max(0.4, raw) / state.speed;
+            }
+
+            function estimateSpeechTime(text) {
+                const chars = text.length;
+                const baseSpeed = 3.8;
+                return Math.max(0.3, chars / baseSpeed);
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ========== 解析 ==========
+            function parseContentFromText(text) {
+                const lines = text.split('\n');
+                const allItems = [];
+                const contentItems = [];
+                let currentMain = null;
+                let currentSub = null;
+
+                for (const raw of lines) {
+                    const trimmed = raw.trim();
+                    if (trimmed === '') continue;
+
+                    let match = trimmed.match(/^[#＃]\s+(\S.*)$/);
+                    if (match) {
+                        const title = match[1].trim();
+                        currentMain = title;
+                        allItems.push({ text: title, type: 'main', mainTitle: title, subTitle: null });
+                        continue;
+                    }
+                    match = trimmed.match(/^[#＃]{2}\s+(\S.*)$/);
+                    if (match) {
+                        const title = match[1].trim();
+                        currentSub = title;
+                        allItems.push({ text: title, type: 'sub', mainTitle: currentMain || null, subTitle: title });
+                        continue;
+                    }
+
+                    const contentText = trimmed;
+                    const idx = contentItems.length;
+                    allItems.push({
+                        text: contentText,
+                        type: 'content',
+                        mainTitle: currentMain || null,
+                        subTitle: currentSub || null,
+                        contentIndex: idx,
+                    });
+                    contentItems.push(contentText);
+                }
+
+                return { allItems, contentItems };
+            }
+
+            function loadLinesFromEditor() {
+                const text = editor.value;
+                const parsed = parseContentFromText(text);
+                state.allItems = parsed.allItems;
+                state.contentItems = parsed.contentItems;
+                if (state.currentAllIndex >= state.allItems.length) {
+                    state.currentAllIndex = state.allItems.length > 0 ? 0 : 0;
+                }
+                if (state.currentContentIndex >= state.contentItems.length) {
+                    state.currentContentIndex = state.contentItems.length > 0 ? 0 : 0;
+                }
+                updateLineCount();
+                return parsed;
+            }
+
+            // ========== 导入 ==========
+            function importTxt(text, fileName) {
+                editor.value = text;
+                state.fileName = fileName;
+                fileInfo.textContent = '📎 ' + fileName + ' (纯文本)';
+                loadLinesFromEditor();
+                saveState();
+                showToast('✅ 已导入 ' + fileName + '，共 ' + state.allItems.length + ' 行（含标题）', 1500);
+                if (!state.isDisplayMode) {
+                    enterDisplayMode();
+                } else {
+                    renderDisplay();
+                    updateProgressText();
+                }
+            }
+
+            function importDocx(arrayBuffer, fileName) {
+                return mammoth.extractRawText({ arrayBuffer })
+                    .then(result => {
+                        const text = result.value;
+                        editor.value = text;
+                        state.fileName = fileName;
+                        fileInfo.textContent = '📎 ' + fileName + ' (请手动添加 # 标记)';
+                        loadLinesFromEditor();
+                        saveState();
+                        showToast('✅ 已导入 ' + fileName + '，请在编辑器中用 # 和 ## 标记标题', 2500);
+                        if (state.isDisplayMode) {
+                            enterEditMode();
+                        }
+                        return true;
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('❌ 解析 .docx 失败: ' + err.message, 2500);
+                        return false;
+                    });
+            }
+
+            function importFile(file) {
+                if (!file) return;
+                const name = file.name;
+                const ext = name.split('.').pop().toLowerCase();
+
+                if (ext === 'txt') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => importTxt(e.target.result, name);
+                    reader.onerror = () => showToast('❌ 读取文件失败', 2000);
+                    reader.readAsText(file, 'UTF-8');
+                } else if (ext === 'docx') {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const arrayBuffer = e.target.result;
+                        importDocx(arrayBuffer, name);
+                    };
+                    reader.onerror = () => showToast('❌ 读取文件失败', 2000);
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    showToast('⚠️ 仅支持 .txt 和 .docx', 1600);
+                }
+            }
+
+            // ========== 渲染 ==========
+            function renderTitles() {
+                const items = state.allItems;
+                const idx = state.currentAllIndex;
+                if (items.length === 0) {
+                    mainTitleDisplay.textContent = '📌 无主标题';
+                    mainTitleDisplay.className = 'main-title empty';
+                    subTitleDisplay.textContent = '📌 无副标题';
+                    subTitleDisplay.className = 'sub-title empty';
+                    return;
+                }
+                const safeIdx = Math.min(idx, items.length - 1);
+                const current = items[safeIdx];
+                const main = current.mainTitle || null;
+                const sub = current.subTitle || null;
+
+                if (main) {
+                    mainTitleDisplay.textContent = main;
+                    mainTitleDisplay.className = 'main-title';
+                } else {
+                    mainTitleDisplay.textContent = '📌 无主标题';
+                    mainTitleDisplay.className = 'main-title empty';
+                }
+
+                if (sub) {
+                    subTitleDisplay.textContent = sub;
+                    subTitleDisplay.className = 'sub-title';
+                } else {
+                    subTitleDisplay.textContent = '📌 无副标题';
+                    subTitleDisplay.className = 'sub-title empty';
+                }
+            }
+
+            function renderDisplay() {
+                const content = state.contentItems;
+                const total = content.length;
+
+                if (total === 0) {
+                    linesContainer.innerHTML =
+                        `<div class="line-item current empty" style="text-align:center;padding:30px 0;">📭 没有正文内容 · 请导入或编辑文本</div>`;
+                    stageProgress.textContent = '0 / 0';
+                    updateProgressText();
+                    renderTitles();
+                    return;
+                }
+
+                if (state.currentContentIndex >= total) {
+                    state.currentContentIndex = total - 1;
+                }
+                const idx = state.currentContentIndex;
+
+                const indices = [];
+                for (let i = idx - 2; i < idx; i++) {
+                    indices.push(i >= 0 ? i : -1);
+                }
+                indices.push(idx);
+                for (let i = idx + 1; i <= idx + 2; i++) {
+                    indices.push(i < total ? i : -1);
+                }
+                while (indices.length < 5) indices.push(-1);
+
+                const positions = ['context-2', 'context-1', 'current', 'context-1', 'context-2'];
+                let html = '';
+                for (let i = 0; i < indices.length; i++) {
+                    const ci = indices[i];
+                    const pos = positions[i] || 'context';
+                    if (ci === -1) {
+                        html += `<div class="line-item context ${pos}" style="opacity:0.06;user-select:none;">—</div>`;
+                    } else {
+                        const line = content[ci] || '';
+                        const isCurrent = (ci === idx);
+                        const cls =
+                            `line-item ${isCurrent ? 'current' : 'context ' + pos}${isCurrent && state.isSpeaking ? ' speaking' : ''}`;
+                        html += `<div class="${cls}" data-index="${ci}">${escapeHtml(line)}</div>`;
+                    }
+                }
+                linesContainer.innerHTML = html;
+
+                const totalAll = state.allItems.length;
+                const currentAllDisplay = Math.min(state.currentAllIndex + 1, totalAll);
+                stageProgress.textContent = `${currentAllDisplay} / ${totalAll}`;
+                updateProgressText();
+                renderTitles();
+                saveState();
+            }
+
+            function updateProgressText() {
+                const totalAll = state.allItems.length;
+                const currentAll = Math.min(state.currentAllIndex + 1, totalAll);
+                topCurrent.textContent = currentAll;
+                topTotal.textContent = totalAll;
+                bottomCurrent.textContent = currentAll;
+                bottomTotal.textContent = totalAll;
+                topFileName.textContent = state.fileName || '未命名';
+            }
+
+            function updateLineCount() {
+                const lines = editor.value.split('\n');
+                lineCountEdit.textContent = lines.length;
+                return lines;
+            }
+
+            // ========== 存储（【修改2】使用带班级前缀的 STORAGE_KEY） ==========
+            function saveState() {
+                try {
+                    const data = {
+                        text: editor.value,
+                        currentAllIndex: state.currentAllIndex,
+                        currentContentIndex: state.currentContentIndex,
+                        speed: state.speed,
+                        speechEnabled: state.speechEnabled,
+                        fileName: state.fileName,
+                        isLooping: state.isLooping,
+                        allItems: state.allItems,
+                        contentItems: state.contentItems,
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                } catch (_) {}
+            }
+
+            function loadState() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return null;
+                    return JSON.parse(raw);
+                } catch (_) { return null; }
+            }
+
+            // ========== 控制 ==========
+            function goToAllIndex(index, silent) {
+                const total = state.allItems.length;
+                if (total === 0) return;
+                let target = index;
+                if (target < 0) target = 0;
+                if (target >= total) target = total - 1;
+
+                if (state.isPlaying) {
+                    pausePlayback();
+                }
+
+                state.currentAllIndex = target;
+                const item = state.allItems[target];
+                if (item.type === 'content') {
+                    state.currentContentIndex = item.contentIndex;
+                }
+
+                state.timerDone = false;
+                state.speechDone = false;
+                state.waitingForSwitch = false;
+
+                if (state.isSpeaking) {
+                    window.speechSynthesis.cancel();
+                    state.isSpeaking = false;
+                    updateSpeechIndicator();
+                }
+
+                renderDisplay();
+                saveState();
+                if (!silent) {
+                    showToast(`第 ${target + 1} 行`, 600);
+                }
+            }
+
+            function goToNext() {
+                const total = state.allItems.length;
+                if (total === 0) return false;
+                let next = state.currentAllIndex + 1;
+                if (next < total) {
+                    goToAllIndex(next);
+                    return true;
+                }
+                if (state.isLooping) {
+                    goToAllIndex(0);
+                    showToast('🔁 循环播放', 800);
+                    return true;
+                }
+                return false;
+            }
+
+            function goToPrev() {
+                if (state.currentAllIndex > 0) {
+                    goToAllIndex(state.currentAllIndex - 1);
+                    return true;
+                }
+                return false;
+            }
+
+            function goToTop() {
+                if (state.isPlaying || state.isPaused) {
+                    stopPlaybackInternal();
+                }
+                if (state.allItems.length > 0) {
+                    goToAllIndex(0);
+                    showToast('⏫ 已回到开头', 1200);
+                }
+            }
+
+            // ========== 播放 ==========
+            function startPlayback() {
+                if (state.allItems.length === 0) {
+                    showToast('⚠️ 没有内容可展示', 1600);
+                    return;
+                }
+                if (state.isPlaying) return;
+
+                if (state.currentAllIndex >= state.allItems.length - 1) {
+                    goToAllIndex(0);
+                }
+
+                state.isPlaying = true;
+                state.isPaused = false;
+                state.waitingForSwitch = false;
+
+                playBtn.textContent = '⏸';
+                playBtn.title = '暂停';
+                prevBtn.disabled = false;
+                nextBtn.disabled = false;
+                toggleModeBtn.disabled = true;
+                toggleModeBtn.textContent = '📊 展示中';
+
+                startShowLine(state.currentAllIndex);
+                saveState();
+            }
+
+            function pausePlayback() {
+                if (!state.isPlaying) return;
+                state.isPlaying = false;
+                state.isPaused = true;
+
+                if (state.timer) {
+                    clearTimeout(state.timer);
+                    state.timer = null;
+                }
+                if (state.isSpeaking) {
+                    window.speechSynthesis.cancel();
+                    state.isSpeaking = false;
+                    updateSpeechIndicator();
+                }
+
+                playBtn.textContent = '▶';
+                playBtn.title = '继续';
+                prevBtn.disabled = false;
+                nextBtn.disabled = false;
+                toggleModeBtn.disabled = false;
+                toggleModeBtn.textContent = '✏️ 编辑';
+                saveState();
+            }
+
+            function resumePlayback() {
+                if (!state.isPaused || state.isPlaying) return;
+                state.isPlaying = true;
+                state.isPaused = false;
+                state.waitingForSwitch = false;
+
+                playBtn.textContent = '⏸';
+                playBtn.title = '暂停';
+                prevBtn.disabled = false;
+                nextBtn.disabled = false;
+                toggleModeBtn.disabled = true;
+                toggleModeBtn.textContent = '📊 展示中';
+
+                startShowLine(state.currentAllIndex);
+                saveState();
+            }
+
+            function stopPlaybackInternal() {
+                if (state.timer) {
+                    clearTimeout(state.timer);
+                    state.timer = null;
+                }
+                if (state.isSpeaking) {
+                    window.speechSynthesis.cancel();
+                    state.isSpeaking = false;
+                    updateSpeechIndicator();
+                }
+                state.isPlaying = false;
+                state.isPaused = false;
+                state.waitingForSwitch = false;
+                state.timerDone = false;
+                state.speechDone = false;
+
+                playBtn.textContent = '▶';
+                playBtn.title = '播放';
+                prevBtn.disabled = false;
+                nextBtn.disabled = false;
+                toggleModeBtn.disabled = false;
+                toggleModeBtn.textContent = state.isDisplayMode ? '✏️ 编辑' : '▶ 展示';
+            }
+
+            function togglePlay() {
+                if (state.allItems.length === 0) {
+                    showToast('⚠️ 没有内容可展示', 1600);
+                    return;
+                }
+                if (state.isPlaying) {
+                    pausePlayback();
+                } else if (state.isPaused) {
+                    resumePlayback();
+                } else {
+                    startPlayback();
+                }
+            }
+
+            // ========== 核心展示行 ==========
+            function startShowLine(index) {
+                const items = state.allItems;
+                if (index >= items.length) {
+                    if (state.isLooping) {
+                        if (state.timer) {
+                            clearTimeout(state.timer);
+                            state.timer = null;
+                        }
+                        state.currentAllIndex = 0;
+                        const firstContentIdx = items.findIndex(item => item.type === 'content');
+                        if (firstContentIdx !== -1) {
+                            state.currentContentIndex = items[firstContentIdx].contentIndex || 0;
+                        } else {
+                            state.currentContentIndex = 0;
+                        }
+                        state.timerDone = false;
+                        state.speechDone = false;
+                        state.waitingForSwitch = false;
+                        renderDisplay();
+                        updateProgressText();
+                        showToast('🔁 循环播放', 800);
+                        startShowLine(0);
+                        return;
+                    }
+                    stopPlaybackInternal();
+                    showToast('✅ 全部展示完成！', 2000);
+                    renderDisplay();
+                    saveState();
+                    return;
+                }
+
+                const item = items[index];
+                const line = item.text;
+                state.currentAllIndex = index;
+
+                if (item.type === 'content') {
+                    state.currentContentIndex = item.contentIndex;
+                }
+
+                state.timerDone = false;
+                state.speechDone = false;
+                state.waitingForSwitch = true;
+
+                renderDisplay();
+                updateProgressText();
+
+                const displayDuration = getLineTime(line);
+
+                if (state.timer) {
+                    clearTimeout(state.timer);
+                    state.timer = null;
+                }
+
+                state.timer = setTimeout(() => {
+                    state.timerDone = true;
+                    state.timer = null;
+                    checkSwitch();
+                }, displayDuration * 1000);
+
+                if (state.speechEnabled && line.trim().length > 0) {
+                    speakLine(line, () => {
+                        state.speechDone = true;
+                        state.isSpeaking = false;
+                        updateSpeechIndicator();
+                        checkSwitch();
+                    });
+                    state.isSpeaking = true;
+                    updateSpeechIndicator();
+                } else {
+                    state.speechDone = true;
+                    state.isSpeaking = false;
+                    updateSpeechIndicator();
+                }
+
+                if (!state.speechEnabled || line.trim().length === 0) {
+                    state.speechDone = true;
+                }
+
+                saveState();
+            }
+
+            // ========== 语音 ==========
+            function speakLine(text, onEnd) {
+                if (!window.speechSynthesis) {
+                    console.warn('[语音] 浏览器不支持语音合成');
+                    if (onEnd) onEnd();
+                    return;
+                }
+
+                window.speechSynthesis.cancel();
+
+                let voices = window.speechSynthesis.getVoices();
+                if (voices.length === 0) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        speakLine(text, onEnd);
+                    };
+                    return;
+                }
+
+                let zhVoice = voices.find(v => v.lang.startsWith('zh'));
+                if (!zhVoice) {
+                    zhVoice = voices.find(v => v.lang.includes('zh') || v.lang.includes('cmn'));
+                }
+                if (!zhVoice && voices.length > 0) {
+                    zhVoice = voices[0];
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                if (zhVoice) {
+                    utterance.voice = zhVoice;
+                    console.log('[语音] 使用语音:', zhVoice.name, '(语言:', zhVoice.lang, ')');
+                } else {
+                    console.warn('[语音] 未找到中文语音，使用浏览器默认语音');
+                }
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+
+                let ended = false;
+                const estimated = estimateSpeechTime(text);
+                const timeout = Math.max(estimated * 2.5, 5);
+                const timer = setTimeout(() => {
+                    if (!ended) {
+                        ended = true;
+                        window.speechSynthesis.cancel();
+                        console.warn('[语音] 朗读超时，强制结束');
+                        if (onEnd) onEnd();
+                    }
+                }, timeout * 1000);
+
+                utterance.onstart = function() {
+                    console.log('[语音] 开始朗读:', text.substring(0, 30) + '...');
+                };
+
+                utterance.onend = function(e) {
+                    clearTimeout(timer);
+                    if (!ended) {
+                        ended = true;
+                        console.log('[语音] 朗读正常结束');
+                        if (onEnd) onEnd();
+                    }
+                };
+
+                utterance.onerror = function(e) {
+                    if (e.error === 'canceled') {
+                        console.log('[语音] 朗读被取消');
+                        return;
+                    }
+                    clearTimeout(timer);
+                    if (!ended) {
+                        ended = true;
+                        console.error('[语音] 朗读出错:', e.error);
+                        if (onEnd) onEnd();
+                    }
+                };
+
+                try {
+                    window.speechSynthesis.speak(utterance);
+                } catch (err) {
+                    console.error('[语音] speak 调用异常:', err);
+                    clearTimeout(timer);
+                    if (!ended) {
+                        ended = true;
+                        if (onEnd) onEnd();
+                    }
+                }
+            }
+
+            function checkSwitch() {
+                if (!state.waitingForSwitch) return;
+                const speechOk = !state.speechEnabled || state.speechDone;
+                if (state.timerDone && speechOk) {
+                    state.waitingForSwitch = false;
+                    const next = state.currentAllIndex + 1;
+                    if (next < state.allItems.length) {
+                        if (state.isPlaying) {
+                            startShowLine(next);
+                        } else {
+                            state.currentAllIndex = next;
+                            const item = state.allItems[next];
+                            if (item.type === 'content') {
+                                state.currentContentIndex = item.contentIndex;
+                            }
+                            renderDisplay();
+                            updateProgressText();
+                            saveState();
+                        }
+                    } else {
+                        if (state.isLooping) {
+                            if (state.isPlaying) {
+                                startShowLine(next);
+                            } else {
+                                state.currentAllIndex = 0;
+                                const first = state.allItems.findIndex(item => item.type === 'content');
+                                if (first !== -1) state.currentContentIndex = state.allItems[first].contentIndex || 0;
+                                renderDisplay();
+                                updateProgressText();
+                                saveState();
+                            }
+                            return;
+                        }
+                        stopPlaybackInternal();
+                        showToast('✅ 全部展示完成！', 2000);
+                        renderDisplay();
+                        saveState();
+                    }
+                }
+            }
+
+            function updateSpeechIndicator() {
+                if (state.speechEnabled && state.isSpeaking) {
+                    speechIndicator.classList.add('visible');
+                } else {
+                    speechIndicator.classList.remove('visible');
+                }
+            }
+
+            // ========== 循环切换 ==========
+            function toggleLoop() {
+                state.isLooping = !state.isLooping;
+                loopBtn.classList.toggle('loop-active', state.isLooping);
+                saveState();
+                showToast(state.isLooping ? '🔁 循环已开启' : '🔁 循环已关闭', 1200);
+            }
+
+            // ========== 模式切换 ==========
+            function enterDisplayMode() {
+                if (state.isDisplayMode) return;
+                if (state.allItems.length === 0) {
+                    loadLinesFromEditor();
+                }
+                if (state.allItems.length === 0) {
+                    showToast('⚠️ 请先输入或导入内容', 1600);
+                    return;
+                }
+                if (state.currentAllIndex >= state.allItems.length) {
+                    state.currentAllIndex = 0;
+                }
+                state.isDisplayMode = true;
+                editPanel.classList.add('hidden');
+                displayPanel.classList.add('active');
+                toggleModeBtn.textContent = '✏️ 编辑';
+                toggleModeBtn.className = 'btn primary';
+                stopPlaybackInternal();
+                renderDisplay();
+                updateProgressText();
+                saveState();
+                showToast(`📖 已载入 ${state.allItems.length} 行（含标题）`, 1000);
+            }
+
+            function enterEditMode() {
+                if (!state.isDisplayMode) return;
+                stopPlaybackInternal();
+                state.isDisplayMode = false;
+                editPanel.classList.remove('hidden');
+                displayPanel.classList.remove('active');
+                toggleModeBtn.textContent = '▶ 展示';
+                toggleModeBtn.className = 'btn';
+                saveState();
+            }
+
+            function toggleMode() {
+                if (state.isDisplayMode) {
+                    enterEditMode();
+                } else {
+                    enterDisplayMode();
+                }
+            }
+
+            // ========== 重置 ==========
+            function resetAll() {
+                if (state.isDisplayMode) {
+                    enterEditMode();
+                }
+                editor.value = '';
+                state.fileName = '未命名';
+                fileInfo.textContent = '未导入文件';
+                state.allItems = [];
+                state.contentItems = [];
+                state.currentAllIndex = 0;
+                state.currentContentIndex = 0;
+                stopPlaybackInternal();
+                renderDisplay();
+                updateLineCount();
+                updateProgressText();
+                saveState();
+                showToast('🔄 已重置', 1000);
+            }
+
+            // ========== 语音开关 ==========
+            function toggleSpeech() {
+                state.speechEnabled = !state.speechEnabled;
+                speechLabel.textContent = state.speechEnabled ? '开' : '关';
+                speechToggle.classList.toggle('active', state.speechEnabled);
+                saveState();
+
+                if (state.speechEnabled) {
+                    showToast('🔊 语音播报已开启', 1200);
+                    try {
+                        if (window.speechSynthesis) {
+                            const voices = window.speechSynthesis.getVoices();
+                            if (voices.length === 0) {
+                                window.speechSynthesis.onvoiceschanged = () => {
+                                    window.speechSynthesis.getVoices();
+                                };
+                            }
+                            const warmup = new SpeechSynthesisUtterance(' ');
+                            warmup.volume = 0;
+                            window.speechSynthesis.speak(warmup);
+                            setTimeout(() => {
+                                window.speechSynthesis.cancel();
+                                console.log('[语音] 预热完成');
+                            }, 200);
+                        }
+                    } catch (e) {
+                        console.warn('[语音] 预热失败:', e);
+                    }
+
+                    if (state.isDisplayMode && state.allItems.length > 0 && !state.isPlaying && !state.isPaused) {
+                        const line = state.allItems[state.currentAllIndex]?.text || '';
+                        if (line.trim().length > 0) {
+                            setTimeout(() => {
+                                speakLine(line, () => {});
+                            }, 300);
+                        }
+                    }
+                } else {
+                    showToast('🔇 语音播报已关闭', 1200);
+                    window.speechSynthesis.cancel();
+                    state.isSpeaking = false;
+                    updateSpeechIndicator();
+                }
+            }
+
+            // ========== 键盘快捷键 ==========
+            function handleKeydown(e) {
+                if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+                if (!state.isDisplayMode) return;
+
+                switch (e.key) {
+                    case ' ':
+                    case 'Space':
+                        e.preventDefault();
+                        togglePlay();
+                        break;
+                    case 'ArrowRight':
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        if (state.isPlaying) {
+                            pausePlayback();
+                        }
+                        goToNext();
+                        break;
+                    case 'ArrowLeft':
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        if (state.isPlaying) {
+                            pausePlayback();
+                        }
+                        goToPrev();
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        if (state.isPlaying) {
+                            pausePlayback();
+                        }
+                        break;
+                }
+            }
+
+            // ========== 初始化 ==========
+            function init() {
+                const saved = loadState();
+                if (saved) {
+                    editor.value = saved.text || '';
+                    state.speed = saved.speed || 1.0;
+                    state.speechEnabled = saved.speechEnabled || false;
+                    state.fileName = saved.fileName || '未命名';
+                    state.isLooping = saved.isLooping || false;
+                    state.currentAllIndex = saved.currentAllIndex || 0;
+                    state.currentContentIndex = saved.currentContentIndex || 0;
+                    state.allItems = saved.allItems || [];
+                    state.contentItems = saved.contentItems || [];
+                    if (saved.text !== undefined) {
+                        editor.value = saved.text;
+                    }
+                    fileInfo.textContent = state.fileName !== '未命名' ? '📎 ' + state.fileName : '未导入文件';
+                    speedSlider.value = state.speed;
+                    speedDisplay.textContent = state.speed.toFixed(1) + '×';
+                    speechLabel.textContent = state.speechEnabled ? '开' : '关';
+                    speechToggle.classList.toggle('active', state.speechEnabled);
+                    loopBtn.classList.toggle('loop-active', state.isLooping);
+                    if (state.allItems.length === 0) {
+                        loadLinesFromEditor();
+                    }
+                } else {
+                    const defaultText =
+                        `# 欢迎使用逐行展示工具
+
+                    ## 这是一段副标题
+
+                    你可以通过导入按钮上传 .docx 或 .txt 文件。
+
+                    在编辑框中，用 # 标记主标题，## 标记副标题（支持半角/全角）。
+
+                    普通文本作为正文，会逐行展示。
+
+                    ## 使用说明
+
+                    点击「展示」进入全屏阅读模式。
+
+                    使用底部控制栏或键盘快捷键操作：
+
+                    ▶ 空格键：播放 / 暂停
+                    ◀ ▶ 左右键：手动翻行
+                    ↑ 回到顶部
+                    🔁 循环播放
+
+                    开启「语音」按钮可朗读当前行。
+
+                    # 祝你使用愉快！ ✨`;
+
+                    editor.value = defaultText;
+                    state.fileName = '示例内容';
+                    fileInfo.textContent = '📝 示例内容';
+                    loadLinesFromEditor();
+                    state.currentAllIndex = 0;
+                    state.currentContentIndex = 0;
+                    saveState();
+                }
+
+                updateLineCount();
+                updateProgressText();
+                state.isDisplayMode = false;
+                editPanel.classList.remove('hidden');
+                displayPanel.classList.remove('active');
+                toggleModeBtn.textContent = '▶ 展示';
+                toggleModeBtn.className = 'btn';
+                stopPlaybackInternal();
+                renderDisplay();
+
+                // ---- 事件绑定 ----
+                editor.addEventListener('input', function() {
+                    updateLineCount();
+                    loadLinesFromEditor();
+                    if (state.isDisplayMode) {
+                        if (state.currentAllIndex >= state.allItems.length) {
+                            state.currentAllIndex = Math.max(0, state.allItems.length - 1);
+                        }
+                        if (state.currentContentIndex >= state.contentItems.length) {
+                            state.currentContentIndex = Math.max(0, state.contentItems.length - 1);
+                        }
+                        renderDisplay();
+                        updateProgressText();
+                    }
+                    saveState();
+                });
+
+                importBtn.addEventListener('click', () => fileInput.click());
+                fileInput.addEventListener('change', function(e) {
+                    if (this.files && this.files.length > 0) {
+                        importFile(this.files[0]);
+                    }
+                    this.value = '';
+                });
+
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+                dropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        importFile(e.dataTransfer.files[0]);
+                    }
+                });
+                dropZone.addEventListener('click', () => fileInput.click());
+
+                toggleModeBtn.addEventListener('click', toggleMode);
+                resetBtn.addEventListener('click', resetAll);
+
+                playBtn.addEventListener('click', togglePlay);
+                prevBtn.addEventListener('click', () => {
+                    if (state.isPlaying) pausePlayback();
+                    goToPrev();
+                });
+                nextBtn.addEventListener('click', () => {
+                    if (state.isPlaying) pausePlayback();
+                    goToNext();
+                });
+                goTopBtn.addEventListener('click', goToTop);
+                loopBtn.addEventListener('click', toggleLoop);
+
+                speedSlider.addEventListener('input', function() {
+                    const val = parseFloat(this.value);
+                    state.speed = val;
+                    speedDisplay.textContent = val.toFixed(1) + '×';
+                    saveState();
+                    if (state.isPlaying) {
+                        startShowLine(state.currentAllIndex);
+                    }
+                });
+
+                speechToggle.addEventListener('click', toggleSpeech);
+
+                document.addEventListener('keydown', handleKeydown);
+
+                window.addEventListener('beforeunload', () => saveState());
+
+                if (!window.speechSynthesis) {
+                    speechToggle.style.opacity = '0.4';
+                    speechToggle.title = '浏览器不支持语音播报';
+                    speechToggle.disabled = true;
+                }
+
+                showToast('👋 欢迎使用！用 # 和 ## 标记标题（支持全角/半角）', 2500);
+            }
+
+            init();
+
+        })();
+    </script>
+
+</body>
+</html>

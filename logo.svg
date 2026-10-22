@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="100%" height="100%" style="position: fixed; top: 0; left: 0;">
+  <style>
+    /* 全局重置，让 SVG 铺满整个视口并居中内容 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f5f5f5;  /* 浅灰色背景，便于观察白色填充，导出 PNG 时为透明 */
+    }
+    svg {
+      display: block;
+      width: 90vmin;
+      height: 90vmin;
+      margin: auto;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: transparent;
+    }
+  </style>
+
+  <g fill="#ffffff" stroke="#000000" stroke-width="6" stroke-linejoin="round">
+    <!-- 匀速旋转，绕几何中心 (150, 150) -->
+    <animateTransform attributeName="transform" type="rotate"
+      from="0 150 150" to="360 150 150"
+      dur="3s" repeatCount="indefinite" />
+
+    <!-- 左上三角形 -->
+    <polygon points="35.15,120 120,35.15 120,120" />
+    <!-- 右上三角形 -->
+    <polygon points="264.85,120 180,35.15 180,120" />
+    <!-- 右下三角形 -->
+    <polygon points="264.85,180 180,264.85 180,180" />
+    <!-- 左下三角形 -->
+    <polygon points="35.15,180 120,264.85 120,180" />
+    <!-- 中心正方形 -->
+    <rect x="120" y="120" width="60" height="60" />
+  </g>
+</svg>

@@ -1,0 +1,2495 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>📅 周课程表</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #0b1a2a; color: #fff; padding: 12px; min-height: 100vh; }
+        .app { width: 95vw; height: 95vh; max-width: 95vw; max-height: 95vh; margin: 0 auto; background: rgba(255,255,255,0.04); border-radius: 24px; padding: 16px 20px 20px; border: 1px solid rgba(255,255,255,0.06); display: flex; flex-direction: column; position: relative; }
+        
+        .header { display: flex; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+        .header h1 { font-size: 24px; background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+        
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #fff; padding: 6px 16px; border-radius: 30px; cursor: pointer; transition: 0.2s; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-export { background: rgba(52,152,219,0.3); border-color: #3498db; color: #fff; }
+        .btn-import { background: rgba(243,156,18,0.3); border-color: #f39c12; color: #fff; }
+        .btn-primary { background: #6c5ce7; border-color: #6c5ce7; color: #fff; }
+        .btn-success { background: #27ae60; border-color: #27ae60; color: #fff; }
+        .btn-danger { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+
+        /* ===== 下拉菜单 ===== */
+        .dropdown-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            min-width: 220px;
+            background: #1a2a3a;
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 12px;
+            padding: 4px;
+            z-index: 200;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        }
+        .dropdown-wrap.open .dropdown-menu {
+            display: block;
+        }
+        .dropdown-item {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: 0.15s;
+        }
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .dropdown-item .sub-hint {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            margin-top: 2px;
+            font-weight: 400;
+        }
+        
+        .work-focus {
+            flex: 1 1 300px;
+            min-width: 200px;
+            height: 38px;
+            padding: 4px 14px;
+            background: rgba(108,92,231,0.12);
+            border: 1px solid rgba(108,92,231,0.35);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            overflow: hidden;
+        }
+        .work-focus-label { flex-shrink: 0; color: #8b7ce7; font-weight: 700; user-select: none; }
+        .work-focus-text {
+            flex: 1; height: 100%; color: #fff; cursor: text; outline: none;
+            min-width: 50px; position: relative; overflow: hidden;
+            display: flex; align-items: center;
+        }
+        .work-focus-text .note-track {
+            position: absolute; top: 0; left: 0; height: 100%;
+            display: flex; align-items: center; white-space: nowrap;
+        }
+        .work-focus-text .note-track.scrolling {
+            animation-name: marqueeNote;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+        .work-focus-text .note-content { flex-shrink: 0; padding-right: 60px; }
+        .work-focus-text.empty { color: #666; font-style: italic; justify-content: flex-start; }
+        .work-focus-text[contenteditable="true"] {
+            background: rgba(0,0,0,0.35); padding: 2px 6px;
+            border-radius: 6px; outline: 1px solid rgba(255,215,0,0.7);
+        }
+        
+        .back-link { margin-left: auto; color: #6c5ce7; text-decoration: none; font-weight: 500; display: flex; align-items: center; flex-shrink: 0; }
+        .back-link img { width: 40px; height: 40px; }
+
+        .table-wrap { 
+            flex: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);
+            background: #ffffff; min-height: 0; overflow: hidden;
+        }
+        table { 
+            width: 100%; border-collapse: collapse; table-layout: fixed;
+            min-width: 900px; height: 100%; background: #fff;
+        }
+        
+        th, td { 
+            border: 1px solid rgba(0,0,0,0.15);
+            text-align: center; font-size: 13px;
+            background: #fff; color: #000;
+            vertical-align: middle;
+            overflow: hidden;
+            padding: 0;
+            position: relative;
+        }
+        th { 
+            background: #f0f0f0; color: #000; font-weight: 700;
+            position: sticky; top: 0; z-index: 3;
+            padding: 4px 4px;
+        }
+        th:first-child, td:first-child { 
+            width: 100px; background: #f5f5f5; color: #000;
+            position: sticky; left: 0; z-index: 2; font-weight: 700;
+        }
+        td:first-child { padding: 2px 4px; }
+        thead th:first-child { z-index: 4; background: #e8e8e8; }
+        
+        .today-header { background: #ffd700 !important; color: #000 !important; font-size: 14px; font-weight: 900; }
+        .today-col { background: rgba(255, 215, 0, 0.35) !important; }
+
+        .today-col.current-period {
+            background: rgba(255, 215, 0, 0.88) !important;
+            box-shadow: inset 0 0 0 3px #b8860b, 0 0 24px rgba(255, 215, 0, 0.7) !important;
+            animation: currentPulse 2.4s ease-in-out infinite;
+            z-index: 2;
+        }
+        @keyframes currentPulse {
+            0%, 100% { box-shadow: inset 0 0 0 3px #b8860b, 0 0 24px rgba(255, 215, 0, 0.5) !important; }
+            50%      { box-shadow: inset 0 0 0 3px #b8860b, 0 0 36px rgba(255, 215, 0, 0.95) !important; }
+        }
+        .today-col.current-period .course-name,
+        .today-col.current-period .course-info,
+        .today-col.current-period .course-third,
+        .today-col.current-period .empty-tip {
+            color: #1a1a1a !important;
+            font-weight: 700;
+        }
+        
+        .past-header { background: #333 !important; color: #999 !important; }
+        .past-col { background: #4a4a4a !important; color: #bbb !important; }
+        .past-col .course-name { color: #ddd !important; }
+        .past-col .course-info { color: #aaa !important; }
+        .past-col .course-third { color: #aaa !important; }
+        .past-col .empty-tip { color: #999 !important; }
+        
+        .future-header { background: #f0f0f0 !important; color: #333 !important; }
+        .future-col { background: #fafafa !important; color: #333 !important; }
+        
+        .exam-header { background: #000 !important; color: #fff !important; font-weight: 900; }
+        .exam-col { background: #1a1a1a !important; color: #fff !important; border-left: 2px solid #000 !important; border-right: 2px solid #000 !important; }
+        .exam-col .empty-tip { color: #888 !important; }
+        .exam-col .course-name { color: #fff !important; }
+        .exam-col .course-info { color: #bbb !important; }
+        .exam-col .course-third { color: #bbb !important; }
+        
+        .banner-row .banner-period-label {
+            background: #f5f5f5 !important;
+            color: #333 !important;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+        .banner-row .banner-cell {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 4px;
+            cursor: pointer;
+            padding: 0 4px !important;
+            border-top: 1px solid rgba(0,0,0,0.15) !important;
+            border-bottom: 1px solid rgba(0,0,0,0.15) !important;
+            border-left: none !important;
+            border-right: none !important;
+        }
+        .banner-row td:nth-child(2) {
+            border-left: 1px solid rgba(0,0,0,0.15) !important;
+        }
+        .banner-row td:nth-child(6) {
+            border-right: 1px solid rgba(0,0,0,0.15) !important;
+        }
+        .banner-row .banner-cell.past-banner { background: #4a4a4a !important; color: #bbb !important; }
+        .banner-row .banner-cell.today-banner { background: rgba(255, 215, 0, 0.35) !important; color: #000 !important; }
+        .banner-row .banner-cell.future-banner { background: #fafafa !important; color: #333 !important; }
+        .banner-row .banner-exam {
+            background: #1a1a1a !important;
+            border-left: 2px solid #000 !important;
+            border-right: 2px solid #000 !important;
+        }
+        
+        .cell-content {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            overflow: hidden; padding: 2px 4px;
+            gap: 0;
+            z-index: 1;
+        }
+        
+        .course-cell { cursor: pointer; line-height: 1.15; }
+        
+        .course-name {
+            font-size: 12px; font-weight: 600; line-height: 1.1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+        .course-avg {
+            display: inline-block;
+            font-size: 9px;
+            background: #ff4d6d;
+            color: #fff;
+            padding: 0 4px;
+            border-radius: 8px;
+            font-weight: 700;
+            line-height: 14px;
+            flex-shrink: 0;
+        }
+        
+        .course-info {
+            font-size: 9px;
+            color: #666;
+            line-height: 1.1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 100%;
+            margin-top: 1px;
+        }
+        
+        .course-third {
+            font-size: 9px;
+            color: #888;
+            line-height: 1.1;
+            height: 11px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            margin-top: 1px;
+        }
+        .course-third .note-track {
+            position: absolute; top: 0; left: 0; height: 100%;
+            display: flex; align-items: center; white-space: nowrap;
+        }
+        .course-third .note-track.scrolling {
+            animation-name: marqueeNote;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+        .course-third .note-content { flex-shrink: 0; padding-right: 30px; }
+        .course-third.static .note-content {
+            padding-right: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+            display: block;
+        }
+        .course-third.is-note .note-content {
+            color: #4dabf7 !important;
+        }
+        @keyframes marqueeNote {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .course-cell:hover { box-shadow: inset 0 0 0 2px rgba(0,0,0,0.4); }
+        .course-cell.has-course { font-weight: 500; }
+        .course-cell .empty-tip { color: #888; font-size: 11px; font-weight: 400; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+        .course-cell:hover .empty-tip { opacity: 1; }
+        .course-cell.selected-cell { box-shadow: inset 0 0 0 3px #6c5ce7 !important; }
+        
+        .course-cell.dragging { opacity: 0.35; }
+        .course-cell.drag-over-cell {
+            box-shadow: inset 0 0 0 3px #ffd700 !important;
+            background: rgba(255, 215, 0, 0.2) !important;
+        }
+        .course-cell.swap-source {
+            box-shadow: inset 0 0 0 3px #ff4d6d !important;
+            background: rgba(255, 77, 109, 0.15) !important;
+            animation: swapPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes swapPulse {
+            0%, 100% { background: rgba(255, 77, 109, 0.15); }
+            50% { background: rgba(255, 77, 109, 0.3); }
+        }
+        
+        .period-label { cursor: pointer; display: inline-block; padding: 2px 6px; border-radius: 4px; transition: 0.15s; font-size: 13px; }
+        .period-label:hover { background: rgba(0,0,0,0.1); }
+
+        .rating-panel {
+            position: fixed;
+            top: 82px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: #1a2a3a;
+            border: 2px solid #ffd700;
+            border-radius: 16px;
+            padding: 12px 20px;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            width: 720px;
+            max-width: 92vw;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        .rating-panel.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+        }
+        .panel-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 15px; font-weight: 700; color: #ffd700;
+        }
+        .panel-title .slot-info {
+            font-size: 12px; color: #8b7ce7; font-weight: 500;
+        }
+        .panel-close-btn {
+            background: transparent; border: none; color: #888;
+            font-size: 18px; cursor: pointer; padding: 0 4px;
+            line-height: 1; border-radius: 4px;
+        }
+        .panel-close-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        
+        .panel-avg-row {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; margin-bottom: 8px;
+            font-size: 13px; color: #ccc;
+        }
+        .panel-avg-row .avg-num {
+            color: #ff4d6d;
+            font-size: 22px;
+            font-weight: 900;
+        }
+        .panel-avg-row .avg-count {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .rating-picker {
+            display: flex; gap: 4px; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .rating-btn {
+            flex: 1; height: 32px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .rating-btn:hover { background: rgba(255,255,255,0.12); }
+        .rating-btn.selected {
+            background: #ffd700;
+            color: #000;
+            border-color: #ffd700;
+            transform: scale(1.05);
+        }
+        
+        .rating-comment-input {
+            width: 100%;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 8px;
+            outline: none;
+            font-size: 13px;
+            font-family: inherit;
+            resize: none;
+            min-height: 40px;
+            margin-bottom: 8px;
+        }
+        .rating-actions {
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .rating-actions .btn { padding: 4px 16px; font-size: 13px; }
+
+        .note-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: #1a2a3a;
+            border: 2px solid #3498db;
+            border-radius: 16px;
+            padding: 16px 20px;
+            z-index: 600;
+            width: 480px;
+            max-width: 92vw;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+        }
+        .note-panel.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .note-panel-title {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(52,152,219,0.3);
+            font-size: 15px; font-weight: 700; color: #3498db;
+        }
+        .note-panel-title .slot-info {
+            font-size: 12px; color: #8b7ce7; font-weight: 500;
+            margin-left: 8px;
+        }
+        .note-panel-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #4dabf7;
+            border-radius: 10px;
+            outline: none;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.6;
+        }
+        .note-panel-textarea:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.15);
+        }
+        .note-panel-actions {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .note-panel-hint {
+            font-size: 11px;
+            color: #64748b;
+        }
+        .note-panel-btns {
+            display: flex; gap: 8px;
+        }
+
+        .comments-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a2a3a;
+            border: 2px solid #ffd700;
+            border-radius: 16px;
+            padding: 12px 20px 14px;
+            z-index: 500;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            width: 720px;
+            max-width: 92vw;
+            max-height: 42vh;
+            display: flex; flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        }
+        .comments-panel.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+        .comments-list {
+            flex: 1;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.25);
+            border-radius: 10px;
+            padding: 6px 8px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .comment-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 8px 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-score {
+            color: #ff4d6d;
+            font-weight: 700;
+            flex-shrink: 0;
+            min-width: 32px;
+            font-size: 14px;
+            padding-top: 1px;
+        }
+        .comment-text {
+            flex: 1;
+            color: #ddd;
+            word-break: break-all;
+            min-width: 0;
+            padding-top: 2px;
+        }
+        .comment-time {
+            font-size: 10px;
+            color: #777;
+            flex-shrink: 0;
+            padding-top: 4px;
+        }
+        .comment-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+        .comment-empty {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            padding: 16px 0;
+        }
+        .action-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #999;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            height: 22px;
+            font-family: inherit;
+        }
+        .action-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+        .action-btn.like-btn:hover { color: #4dabf7; border-color: rgba(77,171,247,0.5); }
+        .action-btn.dislike-btn:hover { color: #ff8c69; border-color: rgba(255,140,105,0.5); }
+        .action-btn.copy-btn:hover { color: #95e06c; border-color: rgba(149,224,108,0.5); }
+        .action-btn.del-btn { color: #666; padding: 2px 6px; }
+        .action-btn.del-btn:hover { color: #e74c3c; border-color: rgba(231,76,60,0.5); background: rgba(231,76,60,0.08); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #1a2a3a; border-radius: 16px; padding: 20px; width: 90%; max-width: 460px; border: 1px solid rgba(255,215,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin-bottom: 12px; color: #ffd700; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 8px 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; outline: none; font-size: 14px; font-family: inherit; }
+        .form-group textarea { resize: vertical; min-height: 50px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+        .period-edit-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+        .period-edit-actions .row { display: flex; gap: 8px; justify-content: space-between; }
+        .period-edit-actions .btn { flex: 1; }
+
+        .banner-check {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px; background: rgba(155,89,182,0.15);
+            border: 1px solid rgba(155,89,182,0.4); border-radius: 8px;
+            cursor: pointer; user-select: none;
+        }
+        .banner-check input { width: auto !important; cursor: pointer; }
+        .banner-check label { margin: 0 !important; color: #d7b3f0 !important; cursor: pointer; font-size: 13px !important; }
+        .banner-check .hint { font-size: 11px; color: #999; margin-left: 4px; }
+
+        .time-picker-row { display: flex; align-items: center; gap: 8px; }
+        .time-picker-row input[type="time"] {
+            flex: 1; padding: 8px 10px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            color: #fff; border-radius: 8px; outline: none;
+            font-size: 16px; font-family: 'Microsoft YaHei', sans-serif;
+        }
+        .time-picker-row input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.7; }
+        .time-picker-row .sep { color: #aaa; font-size: 14px; flex-shrink: 0; }
+
+        .clock-handle {
+            position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+            z-index: 999; width: 40px; height: 96px;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            border-radius: 12px 0 0 12px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: -2px 0 12px rgba(0,0,0,0.35);
+            transition: width 0.2s ease, right 0.3s ease, opacity 0.3s ease;
+            user-select: none;
+        }
+        .clock-handle:hover { width: 48px; box-shadow: -4px 0 22px rgba(247,151,30,0.55); }
+        .clock-handle.hidden { right: -60px; opacity: 0; pointer-events: none; }
+        .clock-handle-icon { font-size: 24px; animation: clockPulse 2s ease-in-out infinite; line-height: 1; }
+        @keyframes clockPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+        .clock-drawer {
+            position: fixed; right: -440px; top: 0; width: 420px; height: 100vh;
+            background: rgba(10, 20, 35, 0.96);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border-left: 2px solid rgba(247,151,30,0.3);
+            box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+            z-index: 1000; transition: right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 20px; box-sizing: border-box; overflow-y: auto;
+        }
+        .clock-drawer.open { right: 0; }
+        .clock-drawer-header {
+            width: 100%; display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+            font-size: 16px; font-weight: 700; color: #ffd700; letter-spacing: 1px;
+        }
+        .clock-drawer-close { background: transparent; border: none; color: #888; font-size: 20px; cursor: pointer; padding: 0 6px; line-height: 1; }
+        .clock-drawer-close:hover { color: #fff; }
+        #clockCanvas { margin-top: 24px; width: 100%; max-width: 380px; height: auto; display: block; }
+        .clock-digital {
+            margin-top: 20px; font-size: 42px; font-weight: 900; color: #ffd700;
+            font-family: 'Courier New', monospace; letter-spacing: 3px;
+            text-shadow: 0 0 24px rgba(247,151,30,0.5); font-variant-numeric: tabular-nums;
+        }
+        .clock-date { margin-top: 8px; font-size: 15px; color: #aaa; letter-spacing: 1px; }
+        .clock-weekday { margin-top: 4px; font-size: 13px; color: #666; letter-spacing: 2px; }
+
+        @media (max-width: 480px) {
+            .clock-drawer { width: 100vw; right: -100vw; }
+            .clock-digital { font-size: 34px; }
+        }
+        /* ===== 触屏设备禁用 hover（防幽灵鼠标） ===== */
+        @media (hover: none) {
+            .course-cell:hover { box-shadow: none !important; }
+            .course-cell:hover .empty-tip { opacity: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <h1>📅 周课程表</h1>
+            
+            <div class="btn-group">
+                <div class="dropdown-wrap" id="exportDropdown">
+                    <button class="btn btn-export" onclick="toggleExportMenu(event)">📤 导出 ▼</button>
+                    <div class="dropdown-menu">
+                        <button class="dropdown-item" onclick="closeAllDropdowns(); exportData()">📄 导出 CSV<span class="sub-hint">可用 Excel 打开、打印查看</span></button>
+                        <button class="dropdown-item" onclick="exportJSON()">💾 导出 JSON 完整备份<span class="sub-hint">换电脑、改代码前先导出一份存 U 盘</span></button>
+                    </div>
+                </div>
+                <div class="dropdown-wrap" id="importDropdown">
+                    <button class="btn btn-import" onclick="toggleImportMenu(event)">📥 导入 ▼</button>
+                    <div class="dropdown-menu">
+                        <button class="dropdown-item" onclick="closeAllDropdowns(); document.getElementById('fileInputCSV').click()">📄 导入 CSV<span class="sub-hint">只恢复课程名和备注，评论会丢</span></button>
+                        <button class="dropdown-item" onclick="closeAllDropdowns(); document.getElementById('fileInputJSON').click()">💾 导入 JSON 备份<span class="sub-hint">完整恢复所有数据（推荐）</span></button>
+                    </div>
+                </div>
+                <input type="file" id="fileInputCSV" accept=".csv" style="display:none;" onchange="handleImport(event)">
+                <input type="file" id="fileInputJSON" accept=".json,application/json" style="display:none;" onchange="handleImportJSON(event)">
+            </div>
+
+            <div class="work-focus">
+                <span class="work-focus-label">📌 本周工作重点：</span>
+                <span class="work-focus-text empty" id="workFocusText" onclick="editWorkFocus()">点击此处设置本周工作重点</span>
+            </div>
+
+            <a href="home.html" class="back-link"><img src="logo.svg" alt="logo"></a>
+        </div>
+        <div class="table-wrap">
+            <table id="scheduleTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="rating-panel" id="ratingPanel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <span id="ratingPanelCourseName">课程</span>
+                <span class="slot-info" id="ratingPanelSlotInfo">周三 · 第3节</span>
+            </div>
+            <button class="panel-close-btn" onclick="closePanels()" title="关闭">✕</button>
+        </div>
+        <div class="panel-avg-row">
+            <span class="avg-num" id="ratingPanelAvgNum">🌹 -</span>
+            <span class="avg-count" id="ratingPanelAvgCount">暂无评分</span>
+        </div>
+        <div class="rating-picker" id="ratingPicker">
+            <button class="rating-btn" data-score="1">1</button>
+            <button class="rating-btn" data-score="2">2</button>
+            <button class="rating-btn" data-score="3">3</button>
+            <button class="rating-btn" data-score="4">4</button>
+            <button class="rating-btn" data-score="5">5</button>
+            <button class="rating-btn" data-score="6">6</button>
+            <button class="rating-btn" data-score="7">7</button>
+            <button class="rating-btn" data-score="8">8</button>
+            <button class="rating-btn" data-score="9">9</button>
+        </div>
+        <textarea class="rating-comment-input" id="ratingCommentInput" placeholder="写点什么（可选）..." maxlength="200"></textarea>
+        <div class="rating-actions">
+            <button class="btn btn-primary" onclick="submitRating()">提交评分</button>
+        </div>
+    </div>
+
+    <div class="comments-panel" id="commentsPanel">
+        <div class="panel-header">
+            <div class="panel-title">
+                💬 评论
+                <span class="slot-info" id="commentsPanelCount">(0)</span>
+            </div>
+            <button class="panel-close-btn" onclick="closePanels()" title="关闭">✕</button>
+        </div>
+        <div class="comments-list" id="commentsList">
+            <div class="comment-empty">暂无评论</div>
+        </div>
+    </div>
+
+    <div class="note-panel" id="notePanel">
+        <div class="note-panel-title">
+            <div>📝 <span id="notePanelCourseName">课程</span><span class="slot-info" id="notePanelSlotInfo"></span></div>
+            <button class="panel-close-btn" onclick="closeNotePanel()" title="关闭">✕</button>
+        </div>
+        <textarea class="note-panel-textarea" id="notePanelText" placeholder="给这节课写点备注，比如：讲第三章、作业P45、预习下一节..." maxlength="200"></textarea>
+        <div class="note-panel-actions">
+            <span class="note-panel-hint">💡 双击课程格子可编辑完整信息</span>
+            <div class="note-panel-btns">
+                <button class="btn" onclick="closeNotePanel()">取消</button>
+                <button class="btn btn-primary" onclick="saveNotePanel()">保存备注</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="courseModal">
+        <div class="modal-box">
+            <h3 id="modalTitle">编辑课程</h3>
+            <input type="hidden" id="editDayIndex">
+            <input type="hidden" id="editPeriodIndex">
+            
+            <div class="form-group" id="courseNameGroup">
+                <label id="courseNameLabel">课程名称</label>
+                <input type="text" id="courseName" placeholder="如：数学、语文、体育...">
+            </div>
+            
+            <div class="form-group" id="courseTimeGroup" style="display:none;">
+                <label>考试时间</label>
+                <div class="time-picker-row">
+                    <input type="time" id="courseTimeStart" step="300">
+                    <span class="sep">至</span>
+                    <input type="time" id="courseTimeEnd" step="300">
+                </div>
+            </div>
+            
+            <div class="form-group" id="courseTeacherGroup">
+                <label>教师（可选）</label>
+                <input type="text" id="courseTeacher" placeholder="如：王老师">
+            </div>
+            
+            <div class="form-group" id="courseRoomGroup">
+                <label>教室（可选）</label>
+                <input type="text" id="courseRoom" placeholder="如：本班教室、实验室2、操场">
+            </div>
+            
+            <div class="form-group" id="courseNoteGroup">
+                <label>备注（可选）</label>
+                <textarea id="courseNote" placeholder="如：讲第三章，作业P45，预习下一节" maxlength="100"></textarea>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="clearCourse()" style="display:none;" id="clearCourseBtn">清空</button>
+                <button class="btn" onclick="closeCourseModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveCourse()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="periodEditModal">
+        <div class="modal-box">
+            <h3 id="periodModalTitle">编辑节次</h3>
+            <input type="hidden" id="editPeriodIndex">
+            <div class="form-group">
+                <label>节次名称</label>
+                <input type="text" id="periodEditNameInput" placeholder="如：上午第1节 / 大课间 9:30-10:00">
+            </div>
+            <div class="form-group">
+                <label>上下课时间（用于判断"当前正在上的课"）</label>
+                <div class="time-picker-row">
+                    <input type="time" id="periodStartTime" step="60">
+                    <span class="sep">至</span>
+                    <input type="time" id="periodEndTime" step="60">
+                </div>
+                <div style="font-size:11px;color:#888;margin-top:4px;">留空则不标记该节次为"当前"</div>
+            </div>
+            <div class="form-group">
+                <label class="banner-check">
+                    <input type="checkbox" id="periodIsBanner">
+                    <span style="color:#d7b3f0; font-weight:700;">作为横幅行</span>
+                    <span class="hint">横跨周一~周五 · 高度减半</span>
+                </label>
+            </div>
+            <div class="period-edit-actions">
+                <div class="row">
+                    <button class="btn btn-primary" onclick="insertPeriodAbove()">⬆ 在上方插入</button>
+                    <button class="btn btn-primary" onclick="insertPeriodBelow()">⬇ 在下方插入</button>
+                </div>
+                <div class="row">
+                    <button class="btn btn-danger" onclick="deletePeriod()">🗑 删除此节次</button>
+                    <button class="btn" onclick="closePeriodEditModal()">取消</button>
+                </div>
+                <button class="btn btn-success" style="width:100%;" onclick="savePeriodName()">✅ 保存名称</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="clock-handle" id="clockHandle" onclick="toggleClock()" title="打开时钟">
+        <span class="clock-handle-icon">🕐</span>
+    </div>
+
+    <div class="clock-drawer" id="clockDrawer">
+        <div class="clock-drawer-header">
+            <span>🕐 实时时钟</span>
+            <button class="clock-drawer-close" onclick="toggleClock()">✕</button>
+        </div>
+        <canvas id="clockCanvas"></canvas>
+        <div class="clock-digital" id="clockDigital">--:--:--</div>
+        <div class="clock-date" id="clockDate">--</div>
+        <div class="clock-weekday" id="clockWeekday">--</div>
+    </div>
+
+    <script src="dataManager.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const CURRENT_CLASS = params.get('classId') || params.get('class') || localStorage.getItem('currentClassId') || '一班';
+
+        const STORAGE_KEY = 'scheduleData_' + CURRENT_CLASS;
+        const WORK_FOCUS_KEY = 'workFocus_' + CURRENT_CLASS;
+
+        const DAYS = ['周一', '周二', '周三', '周四', '周五', '📝 科目', '⏰ 时间'];
+        const EXAM_SUBJECT_INDEX = 5;
+        const EXAM_TIME_INDEX = 6;
+
+        const STANDARD_SUBJECTS = ['语文','数学','英语','物理','化学','历史','地理','生物','政治'];
+
+        const rawTodayIndex = (new Date().getDay() + 6) % 7;
+        const isWeekendToday = rawTodayIndex >= 5;
+
+        const SCORE_DEFAULT = 5;
+        const MARQUEE_SPEED = 30;
+        const LONG_PRESS_MS = 600;
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str == null ? '' : String(str);
+            return div.innerHTML;
+        }
+
+        // ============================================================
+        //  ★ 下拉菜单（导出 / 导入）
+        // ============================================================
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown-wrap.open').forEach(el => el.classList.remove('open'));
+        }
+        function toggleExportMenu(e) {
+            if (e) e.stopPropagation();
+            const wrap = document.getElementById('exportDropdown');
+            const isOpen = wrap.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) wrap.classList.add('open');
+        }
+        function toggleImportMenu(e) {
+            if (e) e.stopPropagation();
+            const wrap = document.getElementById('importDropdown');
+            const isOpen = wrap.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) wrap.classList.add('open');
+        }
+        document.addEventListener('click', closeAllDropdowns);
+
+        // ============================================================
+        //  ★ 节次时间判断（当前正在上的课）
+        // ============================================================
+        function parsePeriodTime(name) {
+            if (!name) return null;
+            const m = name.match(/(\d{1,2})[:：.．](\d{1,2})\s*[-~—–－至到]\s*(\d{1,2})[:：.．](\d{1,2})/);
+            if (!m) return null;
+            const start = parseInt(m[1]) * 60 + parseInt(m[2]);
+            let end = parseInt(m[3]) * 60 + parseInt(m[4]);
+            if (end <= start) end += 24 * 60;
+            return { start, end };
+        }
+
+        const DEFAULT_PERIOD_TIMES = {
+            '早读':      { start: 7*60+30,  end: 8*60      },
+            '上午第1节': { start: 8*60,     end: 8*60+45   },
+            '上午第2节': { start: 8*60+55,  end: 9*60+40   },
+            '上午第3节': { start: 10*60,    end: 10*60+45  },
+            '上午第4节': { start: 10*60+55, end: 11*60+40  },
+            '下午第1节': { start: 14*60,    end: 14*60+45  },
+            '下午第2节': { start: 14*60+55, end: 15*60+40  },
+            '下午第3节': { start: 16*60,    end: 16*60+45  },
+            '下午第4节': { start: 16*60+55, end: 17*60+40  },
+            '晚自习':    { start: 19*60,    end: 20*60+30  }
+        };
+
+        function hmToMin(hm) {
+            if (!hm) return null;
+            const parts = hm.split(':');
+            if (parts.length !== 2) return null;
+            const h = parseInt(parts[0]), m = parseInt(parts[1]);
+            if (isNaN(h) || isNaN(m)) return null;
+            return h * 60 + m;
+        }
+
+        function getPeriodTime(period) {
+            if (!period) return null;
+            if (period.start && period.end) {
+                const s = hmToMin(period.start);
+                const e = hmToMin(period.end);
+                if (s !== null && e !== null) {
+                    return { start: s, end: e <= s ? e + 24 * 60 : e };
+                }
+            }
+            const parsed = parsePeriodTime(period.name);
+            if (parsed) return parsed;
+            if (!period.name) return null;
+            for (const key in DEFAULT_PERIOD_TIMES) {
+                if (period.name.includes(key) || key.includes(period.name)) {
+                    return DEFAULT_PERIOD_TIMES[key];
+                }
+            }
+            return null;
+        }
+
+        function getCurrentPeriodIndex() {
+            const now = new Date();
+            const rawToday = (now.getDay() + 6) % 7;
+            if (rawToday >= 5) return -1;
+            const curMin = now.getHours() * 60 + now.getMinutes();
+            for (let i = 0; i < scheduleData.periods.length; i++) {
+                const p = scheduleData.periods[i];
+                if (p.banner) continue;
+                const t = getPeriodTime(p);
+                if (t && curMin >= t.start && curMin < t.end) return i;
+            }
+            return -1;
+        }
+
+        let currentPeriodTimer = null;
+
+        function updateCurrentPeriodHighlight() {
+            document.querySelectorAll('.current-period').forEach(el => el.classList.remove('current-period'));
+            const now = new Date();
+            const rawToday = (now.getDay() + 6) % 7;
+            if (rawToday >= 5) return;
+            const idx = getCurrentPeriodIndex();
+            if (idx === -1) return;
+            const cell = document.querySelector(`td.course-cell[data-day="${rawToday}"][data-period="${idx}"]`);
+            if (cell) cell.classList.add('current-period');
+        }
+
+        function startCurrentPeriodTimer() {
+            if (currentPeriodTimer) clearInterval(currentPeriodTimer);
+            updateCurrentPeriodHighlight();
+            currentPeriodTimer = setInterval(updateCurrentPeriodHighlight, 30000);
+        }
+
+        function getCellTimeStatus(dayIdx, periodIdx) {
+            if (dayIdx === EXAM_SUBJECT_INDEX || dayIdx === EXAM_TIME_INDEX) return 'none';
+
+            const now = new Date();
+            const rawToday = (now.getDay() + 6) % 7;
+
+            if (dayIdx < rawToday) return 'past';
+            if (dayIdx > rawToday) return 'future';
+            const period = scheduleData.periods[periodIdx];
+            if (!period) return 'future';
+            const t = getPeriodTime(period);
+
+            if (t) {
+                const curMin = now.getHours() * 60 + now.getMinutes();
+                if (curMin < t.start) return 'future';
+                if (curMin >= t.end) return 'past';
+                return 'now';
+            }
+
+            const curIdx = getCurrentPeriodIndex();
+            if (curIdx === -1) return 'future';
+            if (periodIdx < curIdx) return 'past';
+            if (periodIdx > curIdx) return 'future';
+            return 'now';
+        }
+
+        function matchSubject(courseName) {
+            if (!courseName) return null;
+            for (const sub of STANDARD_SUBJECTS) {
+                if (courseName === sub) return sub;
+            }
+            for (const sub of STANDARD_SUBJECTS) {
+                if (courseName.includes(sub)) return sub;
+            }
+            return null;
+        }
+
+        function genReviewId() {
+            return 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        }
+
+        function formatTimeShort(hhmm) {
+            if (!hhmm) return '';
+            const parts = hhmm.split(':');
+            if (parts.length !== 2) return hhmm;
+            return parseInt(parts[0], 10) + ':' + parts[1];
+        }
+        function formatTimeFull(hhmm) {
+            if (!hhmm) return '';
+            const parts = hhmm.split(':');
+            if (parts.length !== 2) return '';
+            const h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            if (isNaN(h) || isNaN(m)) return '';
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+        function formatCommentTime(iso) {
+            try {
+                const d = new Date(iso);
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const mi = String(d.getMinutes()).padStart(2, '0');
+                return `${mm}/${dd} ${hh}:${mi}`;
+            } catch(e) { return ''; }
+        }
+
+        function getAvgScore(course) {
+            if (!course || !course.reviews || course.reviews.length === 0) return null;
+            const valid = course.reviews.filter(r => r.score != null && !isNaN(r.score));
+            if (valid.length === 0) return null;
+            const sum = valid.reduce((a, r) => a + parseFloat(r.score), 0);
+            return sum / valid.length;
+        }
+
+        function getCommentsText(course) {
+            if (!course || !course.reviews || course.reviews.length === 0) return '';
+            return course.reviews
+                .filter(r => r.text && r.text.trim())
+                .map(r => {
+                    const netLikes = r.likes || 0;
+                    let likeStr = '';
+                    if (netLikes > 0) likeStr = ` 👍${netLikes}`;
+                    else if (netLikes < 0) likeStr = ` 👎${-netLikes}`;
+                    return `🌹${r.score} ${r.text.trim()}${likeStr}`;
+                })
+                .join('  ·  ');
+        }
+
+        function getTopComment(course) {
+            if (!course || !course.reviews || course.reviews.length === 0) return '';
+            const withText = course.reviews.filter(r => r.text && r.text.trim());
+            if (withText.length === 0) return '';
+            const sorted = [...withText].sort((a, b) => {
+                const likesDiff = (b.likes || 0) - (a.likes || 0);
+                if (likesDiff !== 0) return likesDiff;
+                return new Date(b.time || 0) - new Date(a.time || 0);
+            });
+            const top = sorted[0];
+            const netLikes = top.likes || 0;
+            let likeStr = '';
+            if (netLikes > 0) likeStr = ` 👍${netLikes}`;
+            else if (netLikes < 0) likeStr = ` 👎${-netLikes}`;
+            return `🌹${top.score} ${top.text.trim()}${likeStr}`;
+        }
+
+        function applyMarqueeToElement(track, container) {
+            if (!track || !container) return;
+            const contents = track.querySelectorAll('.note-content');
+            for (let i = contents.length - 1; i > 0; i--) contents[i].remove();
+            track.classList.remove('scrolling');
+            track.style.animationDuration = '';
+            
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const first = track.querySelector('.note-content');
+                    if (!first) return;
+                    const firstWidth = first.offsetWidth;
+                    if (firstWidth > container.clientWidth) {
+                        track.appendChild(first.cloneNode(true));
+                        const duration = firstWidth / MARQUEE_SPEED;
+                        track.style.animationDuration = duration.toFixed(2) + 's';
+                        track.classList.add('scrolling');
+                    }
+                });
+            });
+        }
+
+        function renderWorkFocus() {
+            const text = localStorage.getItem(WORK_FOCUS_KEY) || '';
+            const el = document.getElementById('workFocusText');
+            el.classList.remove('scrolling');
+            el.style.animationDuration = '';
+            if (text) {
+                el.innerHTML = `<div class="note-track"><span class="note-content">${escapeHtml(text)}</span></div>`;
+                el.classList.remove('empty');
+                applyMarqueeForWorkFocus();
+            } else {
+                el.innerHTML = '点击此处设置本周工作重点';
+                el.classList.add('empty');
+            }
+        }
+
+        function applyMarqueeForWorkFocus() {
+            const el = document.getElementById('workFocusText');
+            if (!el || el.classList.contains('empty') || el.contentEditable === 'true') return;
+            const track = el.querySelector('.note-track');
+            if (track) applyMarqueeToElement(track, el);
+        }
+
+        function editWorkFocus() {
+            const el = document.getElementById('workFocusText');
+            if (el.contentEditable === 'true') return;
+            const text = localStorage.getItem(WORK_FOCUS_KEY) || '';
+            el.classList.remove('empty', 'scrolling');
+            el.innerHTML = '';
+            el.textContent = text;
+            el.contentEditable = 'true';
+            el.focus();
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            el.onblur = () => {
+                el.contentEditable = 'false';
+                el.onblur = null;
+                el.onkeydown = null;
+                let newText = el.innerText.replace(/\s+/g, ' ').trim();
+                if (newText) localStorage.setItem(WORK_FOCUS_KEY, newText);
+                else localStorage.removeItem(WORK_FOCUS_KEY);
+                renderWorkFocus();
+            };
+            el.onkeydown = (e) => {
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                    e.preventDefault(); el.blur();
+                }
+            };
+        }
+
+        const DEFAULT_PERIODS = ['早读', '上午第1节', '上午第2节', '上午第3节', '上午第4节', '下午第1节', '下午第2节', '下午第3节', '下午第4节', '晚自习'];
+
+        let scheduleData = { periods: [], courses: {} };
+        let editingDay = -1, editingPeriod = -1;
+        let selectedScore = null;
+        let activePanelDay = -1;
+        let activePanelPeriod = -1;
+        let activeNoteDay = -1;
+        let activeNotePeriod = -1;
+        let dragSource = null;
+        let touchSource = null;
+        let longPressTimer = null;
+        let justLongPressed = false;
+        let cellClickTimer = null;
+
+        function migrateOldData(data) {
+            if (!data) return data;
+            if (Array.isArray(data.periods)) {
+                data.periods = data.periods.map(p => {
+                    if (typeof p === 'string') return { name: p, banner: false };
+                    if (!p || typeof p !== 'object') return { name: String(p || ''), banner: false };
+                    if (p.name === undefined) p.name = '';
+                    if (p.banner === undefined) p.banner = false;
+                    return p;
+                });
+            }
+            if (data.courses) {
+                Object.keys(data.courses).forEach(dIdx => {
+                    Object.keys(data.courses[dIdx]).forEach(pIdx => {
+                        const c = data.courses[dIdx][pIdx];
+                        if (!c) return;
+                        if (c.teacher && !c.note) c.note = c.teacher;
+                        delete c.teacher;
+                        if (!c.reviews) c.reviews = [];
+                        c.reviews = c.reviews.map(r => {
+                            if (!r.id) r.id = genReviewId();
+                            if (r.likes === undefined && r.dislikes === undefined) {
+                                r.likes = 0;
+                            } else if (r.likes !== undefined && r.dislikes !== undefined) {
+                                r.likes = (r.likes || 0) - (r.dislikes || 0);
+                                delete r.dislikes;
+                            } else if (r.dislikes !== undefined) {
+                                r.likes = -(r.dislikes || 0);
+                                delete r.dislikes;
+                            }
+                            if (r.score === undefined) r.score = SCORE_DEFAULT;
+                            return r;
+                        });
+                    });
+                });
+            }
+            return data;
+        }
+
+        function loadData() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    scheduleData = JSON.parse(saved);
+                    if (!scheduleData.periods || scheduleData.periods.length === 0) {
+                        scheduleData.periods = DEFAULT_PERIODS.map(n => ({ name: n, banner: false }));
+                    }
+                    if (!scheduleData.courses) scheduleData.courses = {};
+                    migrateOldData(scheduleData);
+                } else {
+                    scheduleData = { periods: DEFAULT_PERIODS.map(n => ({ name: n, banner: false })), courses: {} };
+                    saveData();
+                }
+            } catch(e) {
+                scheduleData = { periods: DEFAULT_PERIODS.map(n => ({ name: n, banner: false })), courses: {} };
+                saveData();
+            }
+        }
+
+        function saveData() {
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleData)); } catch(e) {}
+        }
+
+        function renderHeader() {
+            const head = document.getElementById('tableHead');
+            let html = '<tr><th style="width:100px;">节次 / 日期</th>';
+            
+            const now = new Date();
+            for (let i = 0; i < 5; i++) {
+                const d = new Date(now);
+                d.setDate(now.getDate() - rawTodayIndex + i);
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const dateStr = `${mm}/${dd}`;
+                
+                let cls = '';
+                if (isWeekendToday) cls = 'future-header';
+                else if (i < rawTodayIndex) cls = 'past-header';
+                else if (i === rawTodayIndex) cls = 'today-header';
+                else cls = 'future-header';
+                html += `<th class="${cls}" style="width:13%;">${DAYS[i]} ${dateStr}</th>`;
+            }
+            
+            html += `<th class="exam-header" style="width:12%;">${DAYS[5]}</th>`;
+            html += `<th class="exam-header" style="width:12%;">${DAYS[6]}</th>`;
+            html += '</tr>';
+            head.innerHTML = html;
+        }
+
+        function renderTable() {
+            const body = document.getElementById('tableBody');
+            renderHeader();
+            let html = '';
+
+            scheduleData.periods.forEach((period, pIdx) => {
+                if (period.banner) {
+                    html += '<tr class="banner-row" data-period-index="' + pIdx + '">';
+                    html += `<td class="banner-period-label" ondblclick="openPeriodEditModal(${pIdx})" title="双击编辑">${escapeHtml(period.name)}</td>`;
+                    for (let dIdx = 0; dIdx < 5; dIdx++) {
+                        let cls = 'banner-cell';
+                        if (isWeekendToday) cls += ' future-banner';
+                        else if (dIdx < rawTodayIndex) cls += ' past-banner';
+                        else if (dIdx === rawTodayIndex) cls += ' today-banner';
+                        else cls += ' future-banner';
+                        const showText = (dIdx === 2);
+                        html += `<td class="${cls}" ondblclick="openPeriodEditModal(${pIdx})" title="双击编辑">${showText ? escapeHtml(period.name) : ''}</td>`;
+                    }
+                    html += `<td class="banner-exam"></td>`;
+                    html += `<td class="banner-exam"></td>`;
+                    html += '</tr>';
+                    return;
+                }
+                
+                html += '<tr>';
+                html += `<td><span class="period-label" title="双击编辑节次" ondblclick="openPeriodEditModal(${pIdx})">${escapeHtml(period.name)}</span></td>`;
+
+                for (let dIdx = 0; dIdx < 7; dIdx++) {
+                    const course = (scheduleData.courses[dIdx] && scheduleData.courses[dIdx][pIdx]) || null;
+                    
+                    let timeColClass = '';
+                    if (dIdx === EXAM_SUBJECT_INDEX || dIdx === EXAM_TIME_INDEX) {
+                        timeColClass = 'exam-col';
+                    } else if (isWeekendToday) {
+                        timeColClass = 'future-col';
+                    } else if (dIdx < rawTodayIndex) {
+                        timeColClass = 'past-col';
+                    } else if (dIdx === rawTodayIndex) {
+                        timeColClass = 'today-col';
+                    } else {
+                        timeColClass = 'future-col';
+                    }
+                    
+                    const isSelected = (activePanelDay === dIdx && activePanelPeriod === pIdx);
+                    const selectedClass = isSelected ? 'selected-cell' : '';
+                    const isSwapSource = (touchSource && touchSource.day === dIdx && touchSource.period === pIdx);
+                    const swapClass = isSwapSource ? 'swap-source' : '';
+
+                    let emptyTip = '双击添加';
+                    if (dIdx === EXAM_SUBJECT_INDEX) emptyTip = '双击添加科目';
+                    else if (dIdx === EXAM_TIME_INDEX) emptyTip = '双击选时间';
+
+                    const isTodayCol = (!isWeekendToday && dIdx === rawTodayIndex);
+                    const isDraggableCol = (dIdx !== EXAM_SUBJECT_INDEX && dIdx !== EXAM_TIME_INDEX);
+
+                    let innerHtml;
+                    if (course) {
+                        const avg = getAvgScore(course);
+                        const avgHtml = (avg !== null) ? `<span class="course-avg">🌹${avg.toFixed(1)}</span>` : '';
+                        const nameHtml = `<div class="course-name"><span>${escapeHtml(course.name)}</span>${avgHtml}</div>`;
+                        
+                        const infoParts = [];
+                        if (course.teacher && course.teacher.trim()) infoParts.push(course.teacher.trim());
+                        if (course.room && course.room.trim()) infoParts.push(course.room.trim());
+                        const infoHtml = infoParts.length > 0
+                            ? `<div class="course-info">${escapeHtml(infoParts.join(' · '))}</div>`
+                            : '';
+                        
+                        let thirdContent = '';
+                        let thirdIsMarquee = false;
+                        let thirdIsNote = false;
+                        
+                        if (course.note && course.note.trim()) {
+                            thirdContent = course.note.trim();
+                            thirdIsMarquee = false;
+                            thirdIsNote = true;
+                        } else if (isTodayCol) {
+                            thirdContent = getCommentsText(course);
+                            thirdIsMarquee = true;
+                        } else {
+                            thirdContent = getTopComment(course);
+                            thirdIsMarquee = false;
+                        }
+                        
+                        let thirdHtml = '';
+                        if (thirdContent) {
+                            if (thirdIsMarquee) {
+                                thirdHtml = `<div class="course-third marquee"><div class="note-track"><span class="note-content">${escapeHtml(thirdContent)}</span></div></div>`;
+                            } else if (thirdIsNote) {
+                                thirdHtml = `<div class="course-third static is-note"><span class="note-content">${escapeHtml(thirdContent)}</span></div>`;
+                            } else {
+                                thirdHtml = `<div class="course-third static"><span class="note-content">${escapeHtml(thirdContent)}</span></div>`;
+                            }
+                        }                        
+                        innerHtml = nameHtml + infoHtml + thirdHtml;
+                    } else {
+                        innerHtml = `<span class="empty-tip">${emptyTip}</span>`;
+                    }
+
+                    const hasClass = course ? 'has-course' : '';
+                    const draggableAttr = (course && isDraggableCol) ? 'draggable="true"' : '';
+                    html += `<td class="course-cell ${hasClass} ${timeColClass} ${selectedClass} ${swapClass}" ${draggableAttr} data-day="${dIdx}" data-period="${pIdx}" data-course="${course ? escapeHtml(course.name) : ''}" onclick="handleCellClick(this)" ondblclick="handleCellDoubleClick(event, this)"><div class="cell-content">${innerHtml}</div></td>`;
+                }
+                html += '</tr>';
+            });
+
+            body.innerHTML = html;
+            applyMarquee();
+            requestAnimationFrame(() => requestAnimationFrame(applyRowHeights));
+            updateCurrentPeriodHighlight();
+        }
+
+        function applyRowHeights() {
+            const wrap = document.querySelector('.table-wrap');
+            const table = document.getElementById('scheduleTable');
+            const thead = table.querySelector('thead');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            if (!wrap || !thead || rows.length === 0) return;
+            
+            rows.forEach(tr => { tr.style.height = ''; });
+            
+            const wrapHeight = wrap.clientHeight;
+            const theadHeight = thead.offsetHeight;
+            const available = wrapHeight - theadHeight;
+            if (available <= 0) return;
+            
+            let totalWeight = 0;
+            rows.forEach(tr => {
+                totalWeight += tr.classList.contains('banner-row') ? 0.5 : 1;
+            });
+            
+            const unit = available / totalWeight;
+            
+            rows.forEach(tr => {
+                const isBanner = tr.classList.contains('banner-row');
+                const h = isBanner ? unit * 0.5 : unit;
+                tr.style.height = h + 'px';
+            });
+        }
+
+        function applyMarquee() {
+            document.querySelectorAll('.course-third.marquee').forEach(el => {
+                const track = el.querySelector('.note-track');
+                if (track) applyMarqueeToElement(track, el);
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            applyMarquee();
+            applyMarqueeForWorkFocus();
+            applyRowHeights();
+            updateCurrentPeriodHighlight();
+        });
+
+        function handleCellClick(td) {
+            if (justLongPressed) return;
+            if (cellClickTimer) clearTimeout(cellClickTimer);
+            cellClickTimer = setTimeout(() => {
+                cellClickTimer = null;
+                handleCellClickDelayed(td);
+            }, 250);
+        }
+
+        function handleCellClickDelayed(td) {
+            const dayIdx = parseInt(td.dataset.day);
+            const periodIdx = parseInt(td.dataset.period);
+            const courseName = td.dataset.course;
+            
+            if (touchSource) {
+                if (touchSource.day === dayIdx && touchSource.period === periodIdx) {
+                    touchSource = null;
+                    renderTable();
+                    return;
+                }
+                if (dayIdx !== EXAM_SUBJECT_INDEX && dayIdx !== EXAM_TIME_INDEX) {
+                    swapCourses(touchSource.day, touchSource.period, dayIdx, periodIdx);
+                    touchSource = null;
+                    return;
+                }
+                touchSource = null;
+                renderTable();
+                return;
+            }
+            
+            if (dayIdx === EXAM_SUBJECT_INDEX || dayIdx === EXAM_TIME_INDEX) return;
+            
+            if (!courseName) {
+                closePanels();
+                closeNotePanel();
+                return;
+            }
+            
+            const status = getCellTimeStatus(dayIdx, periodIdx);
+            
+            if (status === 'now') {
+                const course = scheduleData.courses[dayIdx] && scheduleData.courses[dayIdx][periodIdx];
+                if (!course) return;
+                const subject = matchSubject(course.name);
+                let url = 'seat.html?classId=' + encodeURIComponent(CURRENT_CLASS);
+                if (subject) {
+                    url += '&subject=' + encodeURIComponent(subject);
+                }
+                window.open(url, '_blank');
+                return;
+            }
+            
+            if (status === 'past') {
+                if (activePanelDay === dayIdx && activePanelPeriod === periodIdx) {
+                    closePanels();
+                    return;
+                }
+                closeNotePanel();
+                openPanels(dayIdx, periodIdx);
+                return;
+            }
+            
+            if (status === 'future') {
+                closePanels();
+                openNotePanel(dayIdx, periodIdx);
+                return;
+            }
+        }
+
+        function handleCellDoubleClick(event, td) {
+            event.stopPropagation();
+            if (cellClickTimer) {
+                clearTimeout(cellClickTimer);
+                cellClickTimer = null;
+            }
+            const day = parseInt(td.dataset.day);
+            const period = parseInt(td.dataset.period);
+            editCourse(day, period);
+        }
+
+        function swapCourses(day1, period1, day2, period2) {
+            if (day1 === day2 && period1 === period2) return;
+            if (!scheduleData.courses[day1]) scheduleData.courses[day1] = {};
+            if (!scheduleData.courses[day2]) scheduleData.courses[day2] = {};
+            
+            const c1 = scheduleData.courses[day1][period1] || null;
+            const c2 = scheduleData.courses[day2][period2] || null;
+            
+            if (c2) scheduleData.courses[day1][period1] = c2;
+            else delete scheduleData.courses[day1][period1];
+            
+            if (c1) scheduleData.courses[day2][period2] = c1;
+            else delete scheduleData.courses[day2][period2];
+            
+            saveData();
+            renderTable();
+        }
+
+        (function setupDragAndDrop() {
+            const table = document.getElementById('scheduleTable');
+            
+            table.addEventListener('dragstart', e => {
+                const td = e.target.closest('td.course-cell');
+                if (!td) { e.preventDefault(); return; }
+                const day = parseInt(td.dataset.day);
+                const period = parseInt(td.dataset.period);
+                if (day === EXAM_SUBJECT_INDEX || day === EXAM_TIME_INDEX) { e.preventDefault(); return; }
+                const course = scheduleData.courses[day] && scheduleData.courses[day][period];
+                if (!course) { e.preventDefault(); return; }
+                
+                dragSource = { day, period };
+                td.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                try { e.dataTransfer.setData('text/plain', `d${day}p${period}`); } catch(err) {}
+            });
+            
+            table.addEventListener('dragend', e => {
+                document.querySelectorAll('.course-cell.dragging').forEach(el => el.classList.remove('dragging'));
+                document.querySelectorAll('.course-cell.drag-over-cell').forEach(el => el.classList.remove('drag-over-cell'));
+                dragSource = null;
+            });
+            
+            table.addEventListener('dragover', e => {
+                const td = e.target.closest('td.course-cell');
+                if (!td) return;
+                const day = parseInt(td.dataset.day);
+                if (day === EXAM_SUBJECT_INDEX || day === EXAM_TIME_INDEX) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                document.querySelectorAll('.course-cell.drag-over-cell').forEach(el => el.classList.remove('drag-over-cell'));
+                td.classList.add('drag-over-cell');
+            });
+            
+            table.addEventListener('dragleave', e => {
+                const td = e.target.closest('td.course-cell');
+                if (td) td.classList.remove('drag-over-cell');
+            });
+            
+            table.addEventListener('drop', e => {
+                e.preventDefault();
+                document.querySelectorAll('.course-cell.drag-over-cell').forEach(el => el.classList.remove('drag-over-cell'));
+                const td = e.target.closest('td.course-cell');
+                if (!td) return;
+                const day = parseInt(td.dataset.day);
+                const period = parseInt(td.dataset.period);
+                if (day === EXAM_SUBJECT_INDEX || day === EXAM_TIME_INDEX) return;
+                if (!dragSource) return;
+                const src = dragSource;
+                dragSource = null;
+                swapCourses(src.day, src.period, day, period);
+            });
+        })();
+
+        (function setupTouchSwap() {
+            const table = document.getElementById('scheduleTable');
+            
+            table.addEventListener('touchstart', e => {
+                if (e.touches.length !== 1) return;
+                const td = e.target.closest('td.course-cell');
+                if (!td) return;
+                const day = parseInt(td.dataset.day);
+                const period = parseInt(td.dataset.period);
+                if (day === EXAM_SUBJECT_INDEX || day === EXAM_TIME_INDEX) return;
+                const course = scheduleData.courses[day] && scheduleData.courses[day][period];
+                if (!course) return;
+                
+                if (longPressTimer) clearTimeout(longPressTimer);
+                
+                longPressTimer = setTimeout(() => {
+                    longPressTimer = null;
+                    justLongPressed = true;
+                    setTimeout(() => { justLongPressed = false; }, 500);
+                    
+                    if (touchSource && touchSource.day === day && touchSource.period === period) {
+                        touchSource = null;
+                        renderTable();
+                        return;
+                    }
+                    touchSource = { day, period };
+                    renderTable();
+                }, LONG_PRESS_MS);
+            }, { passive: true });
+            
+            table.addEventListener('touchend', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+            
+            table.addEventListener('touchmove', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+        })();
+
+        function openPanels(dayIdx, periodIdx) {
+            const course = scheduleData.courses[dayIdx] && scheduleData.courses[dayIdx][periodIdx];
+            if (!course) return;
+            
+            activePanelDay = dayIdx;
+            activePanelPeriod = periodIdx;
+            
+            document.getElementById('ratingPanelCourseName').textContent = course.name;
+            document.getElementById('ratingPanelSlotInfo').textContent = `${DAYS[dayIdx]} · ${scheduleData.periods[periodIdx].name}`;
+            updateRatingPanelAvg(course);
+            
+            selectedScore = null;
+            document.querySelectorAll('#ratingPicker .rating-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('ratingCommentInput').value = '';
+            
+            document.getElementById('ratingPanel').classList.add('active');
+            
+            updateCommentsPanel(course);
+            document.getElementById('commentsPanel').classList.add('active');
+            
+            renderTable();
+        }
+
+        function closePanels() {
+            activePanelDay = -1;
+            activePanelPeriod = -1;
+            document.getElementById('ratingPanel').classList.remove('active');
+            document.getElementById('commentsPanel').classList.remove('active');
+            renderTable();
+        }
+
+        function openNotePanel(dayIdx, periodIdx) {
+            const course = scheduleData.courses[dayIdx] && scheduleData.courses[dayIdx][periodIdx];
+            if (!course) return;
+            activeNoteDay = dayIdx;
+            activeNotePeriod = periodIdx;
+            document.getElementById('notePanelCourseName').textContent = course.name;
+            document.getElementById('notePanelSlotInfo').textContent =
+                `${DAYS[dayIdx]} · ${scheduleData.periods[periodIdx].name}`;
+            document.getElementById('notePanelText').value = course.note || '';
+            document.getElementById('notePanel').classList.add('active');
+            setTimeout(() => document.getElementById('notePanelText').focus(), 200);
+        }
+
+        function closeNotePanel() {
+            document.getElementById('notePanel').classList.remove('active');
+            activeNoteDay = -1;
+            activeNotePeriod = -1;
+        }
+
+        function saveNotePanel() {
+            if (activeNoteDay < 0 || activeNotePeriod < 0) { closeNotePanel(); return; }
+            const text = document.getElementById('notePanelText').value.trim();
+            const course = scheduleData.courses[activeNoteDay] && scheduleData.courses[activeNoteDay][activeNotePeriod];
+            if (!course) { closeNotePanel(); return; }
+            course.note = text;
+            saveData();
+            closeNotePanel();
+            renderTable();
+        }
+
+        function updateRatingPanelAvg(course) {
+            const avg = getAvgScore(course);
+            const count = (course.reviews || []).length;
+            const numEl = document.getElementById('ratingPanelAvgNum');
+            const cntEl = document.getElementById('ratingPanelAvgCount');
+            if (avg === null) {
+                numEl.textContent = '🌹 -';
+                cntEl.textContent = '暂无评分';
+            } else {
+                numEl.textContent = `🌹 ${avg.toFixed(1)}`;
+                cntEl.textContent = `${count} 人参与`;
+            }
+        }
+
+        function updateCommentsPanel(course) {
+            const list = document.getElementById('commentsList');
+            const countEl = document.getElementById('commentsPanelCount');
+            const reviews = course.reviews || [];
+            countEl.textContent = `(${reviews.length})`;
+            
+            if (reviews.length === 0) {
+                list.innerHTML = '<div class="comment-empty">暂无评论</div>';
+                return;
+            }
+            
+            const sorted = [...reviews].sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0));
+            list.innerHTML = sorted.map(r => {
+                const net = r.likes || 0;
+                let likeDisplay, likeClass;
+                if (net >= 0) {
+                    likeDisplay = `👍 ${net}`;
+                    likeClass = 'like-btn';
+                } else {
+                    likeDisplay = `👎 ${-net}`;
+                    likeClass = 'dislike-btn';
+                }
+                return `
+                    <div class="comment-item">
+                        <span class="comment-score">🌹${r.score || SCORE_DEFAULT}</span>
+                        <span class="comment-text">${escapeHtml(r.text || '(无文字)')}</span>
+                        <span class="comment-time">${formatCommentTime(r.time)}</span>
+                        <span class="comment-actions">
+                            <button class="action-btn ${likeClass}" onclick="toggleLike('${r.id}', 1)" title="赞同">👍</button>
+                            <button class="action-btn dislike-btn" onclick="toggleLike('${r.id}', -1)" title="踩">👎</button>
+                            <button class="action-btn like-btn" style="pointer-events:none;border:none;background:transparent;min-width:36px;justify-content:center;" tabindex="-1">${likeDisplay}</button>
+                            <button class="action-btn copy-btn" onclick="copyComment('${r.id}')" title="复制文字">📋</button>
+                            <button class="action-btn del-btn" onclick="deleteComment('${r.id}')" title="删除">✕</button>
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleLike(reviewId, delta) {
+            if (activePanelDay < 0) return;
+            const course = scheduleData.courses[activePanelDay] && scheduleData.courses[activePanelDay][activePanelPeriod];
+            if (!course || !course.reviews) return;
+            const r = course.reviews.find(x => x.id === reviewId);
+            if (!r) return;
+            r.likes = (r.likes || 0) + delta;
+            saveData();
+            updateCommentsPanel(course);
+            renderTable();
+        }
+
+        function copyComment(reviewId) {
+            if (activePanelDay < 0) return;
+            const course = scheduleData.courses[activePanelDay] && scheduleData.courses[activePanelDay][activePanelPeriod];
+            if (!course || !course.reviews) return;
+            const r = course.reviews.find(x => x.id === reviewId);
+            if (!r) return;
+            const text = r.text || '';
+            if (!text.trim()) { flashToast('这条评论没有文字'); return; }
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    flashToast('已复制 ✓');
+                }).catch(() => {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                flashToast('已复制 ✓');
+            } catch(e) {
+                flashToast('复制失败');
+            }
+            document.body.removeChild(ta);
+        }
+
+        function flashToast(msg) {
+            const tip = document.createElement('div');
+            tip.textContent = msg;
+            tip.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:6px 18px;border-radius:30px;font-size:13px;z-index:9999;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.4);';
+            document.body.appendChild(tip);
+            setTimeout(() => tip.remove(), 1200);
+        }
+
+        function deleteComment(reviewId) {
+            if (activePanelDay < 0) return;
+            const course = scheduleData.courses[activePanelDay] && scheduleData.courses[activePanelDay][activePanelPeriod];
+            if (!course || !course.reviews) return;
+            const r = course.reviews.find(x => x.id === reviewId);
+            if (!r) return;
+            
+            const preview = (r.text || '').slice(0, 20);
+            if (!confirm(`确定删除这条评论吗？\n\n🌹${r.score} ${preview}${r.text && r.text.length > 20 ? '...' : ''}`)) return;
+            
+            course.reviews = course.reviews.filter(x => x.id !== reviewId);
+            saveData();
+            
+            updateRatingPanelAvg(course);
+            updateCommentsPanel(course);
+            renderTable();
+        }
+
+        function submitRating() {
+            if (activePanelDay < 0 || activePanelPeriod < 0) return;
+            if (selectedScore === null) { alert('请先选一个评分（1~9）'); return; }
+            
+            const dayIdx = activePanelDay, periodIdx = activePanelPeriod;
+            const course = scheduleData.courses[dayIdx] && scheduleData.courses[dayIdx][periodIdx];
+            if (!course) return;
+            if (!course.reviews) course.reviews = [];
+            
+            const text = document.getElementById('ratingCommentInput').value.trim();
+            
+            course.reviews.push({
+                id: genReviewId(),
+                score: selectedScore,
+                text: text,
+                time: new Date().toISOString(),
+                likes: 0
+            });
+            
+            saveData();
+            
+            selectedScore = null;
+            document.querySelectorAll('#ratingPicker .rating-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('ratingCommentInput').value = '';
+            
+            updateRatingPanelAvg(course);
+            updateCommentsPanel(course);
+            renderTable();
+        }
+
+        function editCourse(dayIdx, periodIdx) {
+            const course = (scheduleData.courses[dayIdx] && scheduleData.courses[dayIdx][periodIdx]) || null;
+            editingDay = dayIdx;
+            editingPeriod = periodIdx;
+            
+            document.getElementById('editDayIndex').value = dayIdx;
+            document.getElementById('editPeriodIndex').value = periodIdx;
+            
+            const nameGroup = document.getElementById('courseNameGroup');
+            const timeGroup = document.getElementById('courseTimeGroup');
+            const teacherGroup = document.getElementById('courseTeacherGroup');
+            const roomGroup = document.getElementById('courseRoomGroup');
+            const noteGroup = document.getElementById('courseNoteGroup');
+            const nameInput = document.getElementById('courseName');
+            
+            nameGroup.style.display = 'block';
+            timeGroup.style.display = 'none';
+            teacherGroup.style.display = 'block';
+            roomGroup.style.display = 'block';
+            noteGroup.style.display = 'block';
+            
+            if (dayIdx === EXAM_TIME_INDEX) {
+                nameGroup.style.display = 'none';
+                timeGroup.style.display = 'block';
+                teacherGroup.style.display = 'none';
+                roomGroup.style.display = 'none';
+                noteGroup.style.display = 'none';
+                
+                let startVal = '', endVal = '';
+                if (course && course.name) {
+                    const parts = course.name.split('-');
+                    if (parts.length >= 1) startVal = formatTimeFull(parts[0]);
+                    if (parts.length >= 2) endVal = formatTimeFull(parts[1]);
+                }
+                document.getElementById('courseTimeStart').value = startVal;
+                document.getElementById('courseTimeEnd').value = endVal;
+                document.getElementById('modalTitle').textContent = `⏰ 考试时间 - ${scheduleData.periods[periodIdx].name}`;
+                document.getElementById('clearCourseBtn').style.display = course ? 'inline-flex' : 'none';
+                document.getElementById('courseModal').classList.add('active');
+                setTimeout(() => document.getElementById('courseTimeStart').focus(), 100);
+                return;
+            }
+            
+            if (dayIdx === EXAM_SUBJECT_INDEX) {
+                nameGroup.style.display = 'block';
+                timeGroup.style.display = 'none';
+                teacherGroup.style.display = 'none';
+                roomGroup.style.display = 'none';
+                noteGroup.style.display = 'none';
+                
+                document.getElementById('courseNameLabel').textContent = '考试科目';
+                nameInput.value = course ? course.name : '';
+                nameInput.placeholder = '如：数学、语文、英语';
+                document.getElementById('modalTitle').textContent = `📝 考试科目 - ${scheduleData.periods[periodIdx].name}`;
+                document.getElementById('clearCourseBtn').style.display = course ? 'inline-flex' : 'none';
+                document.getElementById('courseModal').classList.add('active');
+                setTimeout(() => nameInput.focus(), 100);
+                return;
+            }
+            
+            document.getElementById('courseNameLabel').textContent = '课程名称';
+            nameInput.value = course ? course.name : '';
+            nameInput.placeholder = '如：数学、语文、体育...';
+            document.getElementById('courseTeacher').value = course ? (course.teacher || '') : '';
+            document.getElementById('courseRoom').value = course ? (course.room || '') : '';
+            document.getElementById('courseNote').value = course ? (course.note || '') : '';
+            document.getElementById('modalTitle').textContent = `编辑课程 - ${DAYS[dayIdx]} ${scheduleData.periods[periodIdx].name}`;
+            document.getElementById('clearCourseBtn').style.display = course ? 'inline-flex' : 'none';
+            
+            document.getElementById('courseModal').classList.add('active');
+            setTimeout(() => nameInput.focus(), 100);
+        }
+
+        function closeCourseModal() {
+            document.getElementById('courseModal').classList.remove('active');
+            editingDay = -1;
+            editingPeriod = -1;
+            renderTable();
+        }
+
+        function saveCourse() {
+            if (editingDay < 0 || editingPeriod < 0) { closeCourseModal(); return; }
+            const dayIdx = editingDay, periodIdx = editingPeriod;
+            
+            if (!scheduleData.courses[dayIdx]) scheduleData.courses[dayIdx] = {};
+            const existing = scheduleData.courses[dayIdx][periodIdx] || { reviews: [] };
+            if (!existing.reviews) existing.reviews = [];
+            
+            if (dayIdx === EXAM_TIME_INDEX) {
+                const startVal = document.getElementById('courseTimeStart').value;
+                const endVal = document.getElementById('courseTimeEnd').value;
+                let timeStr = '';
+                if (startVal && endVal) timeStr = formatTimeShort(startVal) + '-' + formatTimeShort(endVal);
+                else if (startVal) timeStr = formatTimeShort(startVal);
+                else if (endVal) timeStr = formatTimeShort(endVal);
+                if (timeStr) {
+                    scheduleData.courses[dayIdx][periodIdx] = { ...existing, name: timeStr };
+                } else {
+                    delete scheduleData.courses[dayIdx][periodIdx];
+                }
+            } else {
+                const name = document.getElementById('courseName').value.trim();
+                if (name) {
+                    existing.name = name;
+                    if (dayIdx !== EXAM_SUBJECT_INDEX) {
+                        existing.teacher = document.getElementById('courseTeacher').value.trim();
+                        existing.room = document.getElementById('courseRoom').value.trim();
+                        existing.note = document.getElementById('courseNote').value.trim();
+                    }
+                    scheduleData.courses[dayIdx][periodIdx] = existing;
+                } else {
+                    delete scheduleData.courses[dayIdx][periodIdx];
+                }
+            }
+            
+            saveData();
+            closeCourseModal();
+        }
+
+        function clearCourse() {
+            if (editingDay < 0 || editingPeriod < 0) return;
+            if (!confirm('确定要清空这节课的所有内容吗？\n\n（包括课程名、教师、教室、备注、评分和评论）')) return;
+            if (scheduleData.courses[editingDay]) {
+                delete scheduleData.courses[editingDay][editingPeriod];
+            }
+            saveData();
+            closeCourseModal();
+        }
+
+        // ============================================================
+        //  ★ CSV 导入（原有功能，保持不变）
+        // ============================================================
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!confirm('导入将覆盖当前课程表的所有数据，确定继续吗？')) { event.target.value = ''; return; }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result.replace(/^\uFEFF/, '');
+                    const lines = text.split('\n').filter(line => line.trim());
+                    if (lines.length < 2) { alert('❌ 课程表文件内容无效！'); return; }
+                    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+                    if (headers[0] !== '节次') { alert('❌ 导入文件格式不正确！'); return; }
+                    
+                    const totalCols = headers.length;
+                    const isOldFormat7Days = (totalCols === 8 && headers[6] === '周六');
+                    const isMergedExam = (totalCols === 7);
+                    
+                    const newPeriods = [];
+                    const newCourses = {};
+                    for (let i = 1; i < lines.length; i++) {
+                        const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                        if (cols.length < 1 || !cols[0]) continue;
+                        const periodName = cols[0];
+                        newPeriods.push({ name: periodName, banner: false });
+                        
+                        for (let d = 0; d < 5; d++) {
+                            const rawCourse = (cols[d + 1] || '').trim();
+                            if (rawCourse) {
+                                let courseName = rawCourse;
+                                let note = '';
+                                const match = rawCourse.match(/^(.*?)\((.*?)\)$/);
+                                if (match) {
+                                    courseName = match[1].trim();
+                                    note = match[2].trim();
+                                }
+                                if (!newCourses[d]) newCourses[d] = {};
+                                newCourses[d][i - 1] = { name: courseName, note: note, reviews: [] };
+                            }
+                        }
+                        
+                        if (isOldFormat7Days) {
+                            const merged = (cols[6] || '').trim() || (cols[7] || '').trim();
+                            if (merged) {
+                                if (!newCourses[EXAM_SUBJECT_INDEX]) newCourses[EXAM_SUBJECT_INDEX] = {};
+                                newCourses[EXAM_SUBJECT_INDEX][i - 1] = { name: merged, reviews: [] };
+                            }
+                        } else if (isMergedExam) {
+                            const examVal = (cols[6] || '').trim();
+                            if (examVal) {
+                                if (!newCourses[EXAM_SUBJECT_INDEX]) newCourses[EXAM_SUBJECT_INDEX] = {};
+                                newCourses[EXAM_SUBJECT_INDEX][i - 1] = { name: examVal, reviews: [] };
+                            }
+                        } else {
+                            const subjectVal = (cols[6] || '').trim();
+                            const timeVal = (cols[7] || '').trim();
+                            if (subjectVal) {
+                                if (!newCourses[EXAM_SUBJECT_INDEX]) newCourses[EXAM_SUBJECT_INDEX] = {};
+                                newCourses[EXAM_SUBJECT_INDEX][i - 1] = { name: subjectVal, reviews: [] };
+                            }
+                            if (timeVal) {
+                                if (!newCourses[EXAM_TIME_INDEX]) newCourses[EXAM_TIME_INDEX] = {};
+                                newCourses[EXAM_TIME_INDEX][i - 1] = { name: timeVal, reviews: [] };
+                            }
+                        }
+                    }
+                    scheduleData.periods = newPeriods;
+                    scheduleData.courses = newCourses;
+                    saveData(); renderTable();
+                    alert('✅ 课程表导入成功！');
+                } catch (err) { alert('❌ 导入失败：' + err.message); }
+            };
+            reader.readAsText(file, 'utf-8');
+            event.target.value = '';
+        }
+
+        // ============================================================
+        //  ★ CSV 导出（原有功能，保持不变）
+        // ============================================================
+        function exportData() {
+            if (!scheduleData.periods || scheduleData.periods.length === 0) { alert('暂无数据可导出！'); return; }
+            let headers = ['节次', '周一', '周二', '周三', '周四', '周五', '考试科目', '考试时间'];
+            let rows = [];
+            scheduleData.periods.forEach((period, pIdx) => {
+                let row = [period.name];
+                for (let dIdx = 0; dIdx < 7; dIdx++) {
+                    const course = (scheduleData.courses[dIdx] && scheduleData.courses[dIdx][pIdx]) || null;
+                    if (!course) { row.push(''); continue; }
+                    let cell = course.name;
+                    const extras = [];
+                    if (course.teacher) extras.push('师:' + course.teacher);
+                    if (course.room) extras.push('室:' + course.room);
+                    if (course.note) extras.push('注:' + course.note);
+                    if (extras.length) cell += '(' + extras.join(' ') + ')';
+                    row.push(cell);
+                }
+                rows.push(row);
+            });
+            let csvContent = '\uFEFF' + headers.join(',') + '\n';
+            rows.forEach(row => {
+                let safeRow = row.map(cell => {
+                    let str = String(cell).replace(/"/g, '""');
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str}"`;
+                    return str;
+                });
+                csvContent += safeRow.join(',') + '\n';
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 10);
+            link.href = URL.createObjectURL(blob);
+            link.download = `课程表_${CURRENT_CLASS}_${date}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ============================================================
+        //  ★ JSON 完整备份导出（新增）
+        // ============================================================
+        function exportJSON() {
+            closeAllDropdowns();
+            if (!scheduleData || !scheduleData.periods) { alert('暂无数据可导出！'); return; }
+            const backup = {
+                _type: 'schedule-backup',
+                _version: 1,
+                _class: CURRENT_CLASS,
+                _exportTime: new Date().toISOString(),
+                data: scheduleData
+            };
+            const json = JSON.stringify(backup, null, 2);
+            const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+            const link = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 10);
+            link.href = URL.createObjectURL(blob);
+            link.download = `课程表备份_${CURRENT_CLASS}_${date}.json`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            flashToast('✅ 完整备份已导出（建议存 U 盘）');
+        }
+
+        // ============================================================
+        //  ★ JSON 完整备份导入（新增）
+        // ============================================================
+        function handleImportJSON(event) {
+            closeAllDropdowns();
+            const file = event.target.files[0];
+            if (!file) { event.target.value = ''; return; }
+            if (!confirm('导入 JSON 备份将覆盖当前课程表的所有数据（含节次、时间、评论），确定继续吗？')) {
+                event.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const parsed = JSON.parse(text);
+                    if (!parsed || parsed._type !== 'schedule-backup' || !parsed.data) {
+                        alert('❌ 不是有效的课程表备份文件！\n\n（文件头不对，或不是从本系统导出的）');
+                        event.target.value = '';
+                        return;
+                    }
+                    const data = parsed.data;
+                    if (!Array.isArray(data.periods)) {
+                        alert('❌ 备份文件损坏：缺少节次数据');
+                        event.target.value = '';
+                        return;
+                    }
+                    if (data.courses && typeof data.courses !== 'object') {
+                        alert('❌ 备份文件损坏：课程数据格式不对');
+                        event.target.value = '';
+                        return;
+                    }
+                    if (!data.courses) data.courses = {};
+                    scheduleData = data;
+                    migrateOldData(scheduleData);
+                    saveData();
+                    renderTable();
+                    updateCurrentPeriodHighlight();
+                    flashToast('✅ 备份恢复成功');
+                } catch(err) {
+                    alert('❌ 导入失败：' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file, 'utf-8');
+        }
+
+        function openPeriodEditModal(index) {
+            document.getElementById('editPeriodIndex').value = index;
+            const period = scheduleData.periods[index];
+            document.getElementById('periodEditNameInput').value = period.name;
+            document.getElementById('periodIsBanner').checked = !!period.banner;
+            document.getElementById('periodStartTime').value = period.start || '';
+            document.getElementById('periodEndTime').value = period.end || '';
+            document.getElementById('periodModalTitle').textContent = `编辑节次 - 第${index + 1}行`;
+            document.getElementById('periodEditModal').classList.add('active');
+            setTimeout(() => document.getElementById('periodEditNameInput').focus(), 100);
+        }
+        function closePeriodEditModal() { document.getElementById('periodEditModal').classList.remove('active'); }
+        function savePeriodName() {
+            const index = parseInt(document.getElementById('editPeriodIndex').value);
+            const name = document.getElementById('periodEditNameInput').value.trim();
+            const isBanner = document.getElementById('periodIsBanner').checked;
+            const start = document.getElementById('periodStartTime').value;
+            const end = document.getElementById('periodEndTime').value;
+            if (!name) { alert('节次名称不能为空！'); return; }
+            if ((start && !end) || (!start && end)) {
+                alert('开始时间和结束时间需要同时填写，或同时留空');
+                return;
+            }
+            scheduleData.periods[index].name = name;
+            scheduleData.periods[index].banner = isBanner;
+            if (start && end) {
+                scheduleData.periods[index].start = start;
+                scheduleData.periods[index].end = end;
+            } else {
+                delete scheduleData.periods[index].start;
+                delete scheduleData.periods[index].end;
+            }
+            saveData(); closePeriodEditModal(); renderTable();
+            updateCurrentPeriodHighlight();
+        }
+        function insertPeriodAbove() {
+            const index = parseInt(document.getElementById('editPeriodIndex').value);
+            const name = prompt('请输入新节次名称：', '新节次');
+            if (!name || name.trim() === '') return;
+            scheduleData.periods.splice(index, 0, { name: name.trim(), banner: false });
+            for (let d = 0; d < 7; d++) {
+                if (scheduleData.courses[d]) {
+                    const newDayCourses = {};
+                    for (let oldIdx = 0; oldIdx < scheduleData.periods.length - 1; oldIdx++) {
+                        if (oldIdx < index) { if (scheduleData.courses[d][oldIdx]) newDayCourses[oldIdx] = scheduleData.courses[d][oldIdx]; }
+                        else { if (scheduleData.courses[d][oldIdx]) newDayCourses[oldIdx + 1] = scheduleData.courses[d][oldIdx]; }
+                    }
+                    scheduleData.courses[d] = newDayCourses;
+                }
+            }
+            saveData(); closePeriodEditModal(); renderTable();
+        }
+        function insertPeriodBelow() {
+            const index = parseInt(document.getElementById('editPeriodIndex').value);
+            const name = prompt('请输入新节次名称：', '新节次');
+            if (!name || name.trim() === '') return;
+            const insertAt = index + 1;
+            scheduleData.periods.splice(insertAt, 0, { name: name.trim(), banner: false });
+            for (let d = 0; d < 7; d++) {
+                if (scheduleData.courses[d]) {
+                    const newDayCourses = {};
+                    for (let oldIdx = 0; oldIdx < scheduleData.periods.length - 1; oldIdx++) {
+                        if (oldIdx < insertAt) { if (scheduleData.courses[d][oldIdx]) newDayCourses[oldIdx] = scheduleData.courses[d][oldIdx]; }
+                        else { if (scheduleData.courses[d][oldIdx]) newDayCourses[oldIdx + 1] = scheduleData.courses[d][oldIdx]; }
+                    }
+                    scheduleData.courses[d] = newDayCourses;
+                }
+            }
+            saveData(); closePeriodEditModal(); renderTable();
+        }
+        function deletePeriod() {
+            const index = parseInt(document.getElementById('editPeriodIndex').value);
+            if (!confirm(`确定要删除“${scheduleData.periods[index].name}”吗？该节次所有课程将被清空！`)) return;
+            scheduleData.periods.splice(index, 1);
+            for (let d = 0; d < 7; d++) {
+                if (scheduleData.courses[d]) {
+                    const newDayCourses = {};
+                    for (let oldIdx = 0; oldIdx < scheduleData.periods.length + 1; oldIdx++) {
+                        if (oldIdx === index) continue;
+                        if (scheduleData.courses[d][oldIdx]) newDayCourses[oldIdx < index ? oldIdx : oldIdx - 1] = scheduleData.courses[d][oldIdx];
+                    }
+                    scheduleData.courses[d] = newDayCourses;
+                }
+            }
+            saveData(); closePeriodEditModal(); renderTable();
+        }
+
+        document.querySelectorAll('#ratingPicker .rating-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#ratingPicker .rating-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedScore = parseInt(this.dataset.score);
+            });
+        });
+
+        // ================================================================
+        //  时钟抽屉
+        // ================================================================
+        let clockAnimId = null;
+        let clockDPRInitialized = false;
+
+        function toggleClock() {
+            const drawer = document.getElementById('clockDrawer');
+            const handle = document.getElementById('clockHandle');
+            const isOpen = drawer.classList.toggle('open');
+            handle.classList.toggle('hidden', isOpen);
+            if (isOpen) {
+                startClock();
+            } else {
+                stopClock();
+            }
+        }
+
+        function startClock() {
+            stopClock();
+            const loop = () => {
+                drawClock();
+                clockAnimId = requestAnimationFrame(loop);
+            };
+            loop();
+        }
+
+        function stopClock() {
+            if (clockAnimId) {
+                cancelAnimationFrame(clockAnimId);
+                clockAnimId = null;
+            }
+        }
+
+        function drawClock() {
+            const canvas = document.getElementById('clockCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const DPR = window.devicePixelRatio || 1;
+            const cssW = 380;
+            const cssH = 380;
+            const targetW = Math.round(cssW * DPR);
+            const targetH = Math.round(cssH * DPR);
+            if (canvas.width !== targetW || canvas.height !== targetH) {
+                canvas.width = targetW;
+                canvas.height = targetH;
+            }
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+            const W = cssW, H = cssH;
+            const cx = W / 2, cy = H / 2;
+            const R = 170;
+
+            ctx.clearRect(0, 0, W, H);
+
+            const glow = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * 1.18);
+            glow.addColorStop(0, 'rgba(247,151,30,0.18)');
+            glow.addColorStop(1, 'rgba(247,151,30,0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R * 1.18, 0, Math.PI * 2);
+            ctx.fill();
+
+            const bg = ctx.createRadialGradient(cx, cy - 40, 20, cx, cy, R);
+            bg.addColorStop(0, '#1e2f47');
+            bg.addColorStop(1, '#0b1626');
+            ctx.fillStyle = bg;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(247,151,30,0.55)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255,215,0,0.15)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, R - 14, 0, Math.PI * 2);
+            ctx.stroke();
+
+            for (let i = 0; i < 60; i++) {
+                const angle = (Math.PI * 2 / 60) * i - Math.PI / 2;
+                const isHour = i % 5 === 0;
+                const outerR = R - 8;
+                const innerR = isHour ? R - 24 : R - 14;
+                const x1 = cx + Math.cos(angle) * outerR;
+                const y1 = cy + Math.sin(angle) * outerR;
+                const x2 = cx + Math.cos(angle) * innerR;
+                const y2 = cy + Math.sin(angle) * innerR;
+                ctx.strokeStyle = isHour ? '#ffd700' : 'rgba(255,215,0,0.32)';
+                ctx.lineWidth = isHour ? 3 : 1;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 24px -apple-system, "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let i = 1; i <= 12; i++) {
+                const angle = (Math.PI * 2 / 12) * i - Math.PI / 2;
+                const numR = R - 48;
+                const x = cx + Math.cos(angle) * numR;
+                const y = cy + Math.sin(angle) * numR;
+                ctx.fillText(String(i), x, y);
+            }
+
+            const now = new Date();
+            const h = now.getHours() % 12;
+            const m = now.getMinutes();
+            const s = now.getSeconds();
+            const ms = now.getMilliseconds();
+
+            const hAngle = ((h + m / 60 + s / 3600) / 12) * Math.PI * 2;
+            const mAngle = ((m + s / 60) / 60) * Math.PI * 2;
+            const sAngle = ((s + ms / 1000) / 60) * Math.PI * 2;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(hAngle);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(0, 12);
+            ctx.lineTo(0, -85);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,215,0,0.65)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, -20);
+            ctx.lineTo(0, -82);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(mAngle);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(0, 16);
+            ctx.lineTo(0, -125);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,215,0,0.55)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -30);
+            ctx.lineTo(0, -122);
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(sAngle);
+            ctx.strokeStyle = '#ff4d4d';
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 24);
+            ctx.lineTo(0, -142);
+            ctx.stroke();
+            ctx.fillStyle = '#ff4d4d';
+            ctx.beginPath();
+            ctx.arc(0, -142, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, 24, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = '#0b1626';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            const digital = document.getElementById('clockDigital');
+            if (digital) {
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                const newText = hh + ':' + mm + ':' + ss;
+                if (digital.textContent !== newText) digital.textContent = newText;
+            }
+
+            const dateEl = document.getElementById('clockDate');
+            if (dateEl) {
+                const y = now.getFullYear();
+                const mo = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                const newText = y + ' 年 ' + mo + ' 月 ' + d + ' 日';
+                if (dateEl.textContent !== newText) dateEl.textContent = newText;
+            }
+
+            const weekdayEl = document.getElementById('clockWeekday');
+            if (weekdayEl) {
+                const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                const newText = weekdays[now.getDay()];
+                if (weekdayEl.textContent !== newText) weekdayEl.textContent = newText;
+            }
+        }
+
+        window.toggleClock = toggleClock;
+
+        document.getElementById('notePanelText').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                saveNotePanel();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeNotePanel();
+            }
+        });
+
+        renderWorkFocus();
+        loadData();
+        renderTable();
+        startCurrentPeriodTimer();
+    </script>
+</body>
+</html>

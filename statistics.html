@@ -1,0 +1,138 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>📊 数据分析</title>
+    <link rel="stylesheet" href="statistics.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <script src="dataManager.js"></script>
+</head>
+<body>
+
+<div class="app" id="app">
+    <div class="header">
+        <div>
+            <h1>📊 数据统计 <small>自由维度 · 三轴联动</small></h1>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span class="class-badge" id="classDisplay">🏫 班级：一班</span>
+            <a href="home.html" class="back-link" style="display: inline-flex; align-items: center; justify-content: center;">
+    <img src="logo.svg" alt="logo" style="width:40px; height:40px;">
+</a>
+        </div>
+    </div>
+
+    <!-- 顶部工具栏 -->
+    <div class="top-bar" id="topBar">
+        <div class="btn-group" id="chartTypeBar">
+            <button class="active" data-type="bar">📊 条形</button>
+            <button data-type="line">📈 折线</button>
+            <button data-type="pie">🥧 扇形</button>
+            <button data-type="radar">🕸️ 雷达</button>
+        </div>
+
+        <div class="axis-config">
+            <label>
+                📌 X轴
+                <select id="xAxisSelect">
+                    <option value="week">📅 周次</option>
+                    <option value="date">📅 日期</option>
+                    <option value="group">🏷️ 小组</option>
+                    <option value="student">👤 学生</option>
+                    <option value="subject">📚 学科</option>
+                    <option value="dimension">🎯 维度</option>
+                </select>
+            </label>
+            <label>
+                📈 Y轴
+                <select id="yAxisSelect">
+                    <option value="avg">📐 平均</option>
+                    <option value="sum">➕ 求和</option>
+                    <option value="raw">📊 独立</option>
+                    <option value="ranking">🏆 排行</option>
+                </select>
+            </label>
+            <!-- 拆分维度选择器（仅在独立模式显示） -->
+            <label class="split-label" id="splitLabel">
+                🔀 拆分
+                <select id="splitSelect">
+                    <!-- 动态生成 -->
+                </select>
+            </label>
+            <!-- 旋转按钮（切换条形图方向） -->
+            <button class="rotate-btn" id="rotateBtn">🔄 旋转</button>
+            <button class="pure-mode-btn" id="pureModeBtn">🔲 纯净模式</button>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <div class="panel-left" id="panelLeft">
+            <h3>📅 时间范围</h3>
+            <div class="date-range" id="dateRangeContainer">
+                <div class="row">
+                    <label>从</label>
+                    <input type="date" id="startDate" />
+                </div>
+                <div class="row">
+                    <label>到</label>
+                    <input type="date" id="endDate" />
+                </div>
+                <button class="apply-btn" id="applyDateRange">应用</button>
+            </div>
+            <div id="weekListContainer"></div>
+        </div>
+
+        <div class="panel-center">
+            <div class="chart-wrapper" id="chartWrapper">
+                <canvas id="statsChart"></canvas>
+                <div id="rankingContainer" style="display:none; height:100%; overflow-y:auto;"></div>
+                <div class="no-data" id="noData" style="display:none;">
+                    <div class="big-icon">📭</div>
+                    <div id="noDataMsg">暂无数据</div>
+                    <div style="font-size:13px;color:#b0c0d0;">请完善筛选条件</div>
+                </div>
+            </div>
+            <div class="stats-info">
+                <span>📌 数据点：<span class="highlight" id="dataPointCount">0</span></span>
+                <span>📊 维度：<span class="highlight" id="dimensionCount">0</span></span>
+                <span>👤 学生：<span class="highlight" id="studentCount">0</span></span>
+            </div>
+        </div>
+
+        <div class="panel-right" id="panelRight">
+            <h3>📋 数据类型</h3>
+            <div id="dimensionList"></div>
+        </div>
+    </div>
+
+    <div class="panel-bottom" id="panelBottom">
+        <div class="subject-group">
+            <div class="group-label" id="groupMasterLabel">
+                <span class="step">1</span>
+                <input type="checkbox" id="groupMaster" />
+                <span>小组</span>
+                <span class="state-indicator" id="groupMasterIndicator"></span>
+            </div>
+            <div class="items" id="groupList"></div>
+        </div>
+        <div class="subject-group">
+            <div class="group-label" id="studentMasterLabel">
+                <span class="step">2</span>
+                <input type="checkbox" id="studentMaster" />
+                <span>个人</span>
+                <span class="state-indicator" id="studentMasterIndicator"></span>
+            </div>
+            <div class="items" id="studentList"></div>
+        </div>
+    </div>
+
+    <button class="exit-pure-btn" id="exitPureBtn">✕ 退出纯净模式</button>
+</div>
+
+<script src="statistics.js"></script>
+</body>
+</html>

@@ -1,0 +1,1946 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>⚔️ 竞技课堂</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #0b1a2a; color: #fff; padding: 16px; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
+        .app { max-width: 1400px; width: 100%; background: rgba(255,255,255,0.04); border-radius: 24px; padding: 20px 24px 24px; border: 1px solid rgba(255,255,255,0.06); }
+
+        .header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .header h1 { font-size: 24px; font-weight: 700; background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
+        .header .info { display: flex; gap: 8px; font-size: 13px; color: #aaa; align-items: center; flex-wrap: wrap; margin-left: auto; }
+        .header .info .badge { background: rgba(255,215,0,0.15); padding: 3px 12px; border-radius: 30px; border: 1px solid rgba(255,215,0,0.2); font-size: 13px; }
+        .back-link { color: #6c5ce7; text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; }
+        .back-link:hover { text-decoration: underline; }
+        .back-link img { width: 36px; height: 36px; }
+
+        .mode-group { display: flex; gap: 4px; background: rgba(255,255,255,0.06); border-radius: 30px; padding: 3px; }
+        .mode-group button { padding: 4px 14px; border: none; border-radius: 30px; background: transparent; color: #aaa; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.2s; }
+        .mode-group button.active { background: #ffd700; color: #000; }
+        .mode-group button:hover:not(.active) { background: rgba(255,255,255,0.08); }
+
+        .voice-selector { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #aaa; }
+        .voice-selector select {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-size: 13px;
+            max-width: 130px;
+            outline: none;
+        }
+        .voice-selector select option { background: #1a2a3a; color: #fff; }
+        .voice-selector select:focus { border-color: #ffd700; }
+
+        .btn { padding: 5px 18px; border: none; border-radius: 30px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: #6c5ce7; color: #fff; }
+        .btn-primary:hover { background: #5a4bd1; transform: scale(1.03); }
+        .btn-success { background: #27ae60; color: #fff; }
+        .btn-success:hover { background: #1e8449; }
+        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: #fff; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #ccc; }
+        .btn-outline:hover { background: rgba(255,255,255,0.08); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .class-status { font-size: 13px; color: #ffd700; font-weight: 600; white-space: nowrap; }
+
+        .arena {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            height: calc(100vh - 220px);
+            min-height: 520px;
+            align-items: stretch;
+        }
+
+        .team-area {
+            width: 240px;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 12px 10px;
+            border: 2px solid rgba(255,255,255,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .team-area.defender-area { border-color: #ffd700; box-shadow: 0 0 20px rgba(255,215,0,0.1); }
+        .team-area.challenger-area { border-color: #00b4ff; box-shadow: 0 0 20px rgba(0,180,255,0.1); }
+
+        .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .team-name { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100px; }
+        .team-role { font-size: 11px; padding: 2px 8px; border-radius: 30px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
+        .team-score { font-size: 14px; color: #ffd700; font-weight: 700; }
+
+        .member-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            padding: 2px 4px 2px 0;
+            min-height: 0;
+        }
+        .member-list::-webkit-scrollbar { width: 3px; }
+        .member-list::-webkit-scrollbar-track { background: transparent; }
+        .member-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+        .member-btn {
+            flex: 1 1 0;
+            min-height: 0;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 4px 12px;
+            font-size: 14px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            text-align: left;
+        }
+        .member-btn:hover:not(:disabled) { background: rgba(255,255,255,0.16); transform: translateX(2px); border-color: #ffd700; }
+        .member-btn .order-tag { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; border: 2px solid; flex-shrink: 0; }
+        .member-btn .member-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .member-btn .score-tag { font-size: 12px; color: #8ab4f8; margin-left: auto; font-weight: 600; }
+        .member-btn.selected { border-color: #ffd700 !important; background: rgba(255,215,0,0.2); box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+        .member-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; background: rgba(100,100,100,0.2); border-color: #555; }
+        .member-btn.used { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; }
+        .member-btn.safe-negative { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; border-color: #e74c3c; }
+
+        .order-tag.color-1 { color: #ffffff; border-color: #ffffff; background: rgba(255,255,255,0.15); }
+        .order-tag.color-2 { color: #E53935; border-color: #E53935; background: rgba(229,57,53,0.2); }
+        .order-tag.color-3 { color: #FF9100; border-color: #FF9100; background: rgba(255,145,0,0.2); }
+        .order-tag.color-4 { color: #FFEA00; border-color: #FFEA00; background: rgba(255,234,0,0.2); }
+        .order-tag.color-5 { color: #00E676; border-color: #00E676; background: rgba(0,230,118,0.2); }
+        .order-tag.color-6 { color: #2979FF; border-color: #2979FF; background: rgba(41,121,255,0.2); }
+        .order-tag.color-7 { color: #00BCD4; border-color: #00BCD4; background: rgba(0,188,212,0.2); }
+        .order-tag.color-8 { color: #8E24AA; border-color: #8E24AA; background: rgba(142,36,170,0.2); }
+        .order-tag.color-9 { color: #000000; border-color: #000000; background: rgba(0,0,0,0.15); }
+
+        .stage {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            min-height: 300px;
+        }
+        .stage-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none; flex-direction: column; padding-bottom: 70px; }
+        .stage-content .avatar-row { display: flex; align-items: center; justify-content: center; gap: 30px; }
+        .stage-content .avatar { font-size: 60px; line-height: 1; transition: all 0.5s ease; }
+        .stage-content .avatar.big { font-size: 100px; }
+        .stage-content .avatar.fly-in { animation: flyIn 0.6s ease-out forwards; }
+        .stage-content .avatar.fly-out { animation: flyOut 0.6s ease-in forwards; }
+        @keyframes flyIn { 0% { transform: translateX(-200px) scale(0.5); opacity: 0; } 100% { transform: translateX(0) scale(1); opacity: 1; } }
+        @keyframes flyOut { 0% { transform: translateX(0) scale(1); opacity: 1; } 100% { transform: translateX(200px) scale(0.5); opacity: 0; } }
+        .stage-content .avatar.bounce { animation: bounce 0.8s ease; }
+        @keyframes bounce { 0% { transform: scale(1); } 30% { transform: scale(1.3); } 60% { transform: scale(0.9); } 100% { transform: scale(1); } }
+        .stage-content .avatar-label { color: #ffd700; font-size: 18px; font-weight: 700; margin-top: 10px; text-shadow: 0 2px 12px rgba(0,0,0,0.8); }
+        .stage-content .avatar-label.blue { color: #00b4ff; }
+
+        .timer-center { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); padding: 10px 22px; border-radius: 16px; border: 1px solid rgba(255,215,0,0.2); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 10; }
+        .countdown-display { font-size: 36px; font-weight: 900; color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.2); line-height: 1.1; }
+        .timer-controls { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+        .timer-controls .btn { font-size: 11px; padding: 2px 10px; }
+        .timer-setting { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #aaa; }
+        .timer-setting input { width: 44px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 2px 4px; color: #fff; font-size: 13px; text-align: center; }
+        .timer-setting input:focus { border-color: #ffd700; outline: none; }
+        #statusText { font-size: 12px; color: #888; }
+
+        .rank-float { position: absolute; top: 10px; z-index: 8; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); border-radius: 10px; padding: 6px 10px; max-height: 42%; overflow-y: auto; min-width: 100px; border: 1px solid rgba(255,215,0,0.12); }
+        .rank-float::-webkit-scrollbar { width: 2px; }
+        .rank-float::-webkit-scrollbar-track { background: transparent; }
+        .rank-float::-webkit-scrollbar-thumb { background: #666; border-radius: 4px; }
+        .rank-float-left { left: 10px; }
+        .rank-float-right { right: 10px; }
+        .rank-float .title { font-size: 12px; font-weight: 700; color: #ffd700; margin-bottom: 3px; border-bottom: 1px solid rgba(255,215,0,0.12); padding-bottom: 2px; }
+        .rank-float .item { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; color: #ccc; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .rank-float .item .pos { color: #888; min-width: 18px; }
+        .rank-float .item .name { flex: 1; margin-left: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .rank-float .item .score { color: #ffd700; font-weight: 600; margin-left: 3px; }
+        .rank-float .empty { color: #666; font-size: 11px; text-align: center; padding: 3px 0; }
+
+        .history-section { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; }
+        .history-section h3 { font-size: 17px; margin-bottom: 8px; color: #ffd700; }
+        .history-table-wrap { max-height: 220px; overflow-y: auto; border-radius: 12px; background: rgba(255,255,255,0.02); }
+        .history-table-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .history-table-wrap th { background: rgba(255,255,255,0.05); padding: 5px 10px; text-align: left; font-weight: 600; color: #aaa; position: sticky; top: 0; z-index: 2; }
+        .history-table-wrap td { padding: 4px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .history-table-wrap tr:hover td { background: rgba(255,255,255,0.04); }
+
+        .honor-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 9999; display: none; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 0.4s; }
+        .honor-overlay.show { display: flex; opacity: 1; pointer-events: auto; }
+        .honor-box { background: rgba(10,20,35,0.95); border-radius: 32px; padding: 40px 60px; border: 3px solid #ffd700; text-align: center; max-width: 90%; box-shadow: 0 0 60px rgba(255,215,0,0.2); transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+        .honor-overlay.show .honor-box { transform: scale(1); }
+        .honor-box .emoji { font-size: 60px; display: block; margin-bottom: 4px; }
+        .honor-box .msg { font-size: 28px; font-weight: 700; color: #ffd700; }
+        .honor-box .sub { font-size: 16px; color: #ccc; margin-top: 4px; }
+        .honor-box .slogan { font-size: 18px; color: #8ab4f8; margin-top: 6px; font-style: italic; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; z-index: 9998; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #1a2a3a; border-radius: 24px; padding: 28px 32px; max-width: 520px; width: 95%; border: 1px solid rgba(255,215,0,0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
+        .modal-box h2 { color: #ffd700; font-size: 22px; margin-bottom: 10px; text-align: center; }
+        .modal-box .sub { color: #ccc; font-size: 15px; margin-bottom: 16px; text-align: center; }
+        .score-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s; }
+        .score-row.active-scoring { background: rgba(255,215,0,0.15); border-left: 4px solid #ffd700; }
+        .score-row .info { flex: 1; }
+        .score-row .info .name { font-size: 16px; font-weight: 600; color: #fff; }
+        .score-row .info .group-tag { font-size: 12px; color: #888; margin-left: 6px; }
+        .score-row .info .full { font-size: 13px; color: #aaa; }
+        .score-row .current-score { font-size: 20px; font-weight: 700; color: #ffd700; min-width: 40px; text-align: center; }
+        .score-row .adjust-btn { background: #3498db; color: #fff; border: none; border-radius: 30px; padding: 2px 14px; font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .score-row .adjust-btn:hover { background: #2980b9; transform: scale(1.05); }
+        .score-row .adjust-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+        .modal-actions { display: flex; gap: 12px; margin-top: 18px; justify-content: flex-end; }
+
+        .key-highlight {
+            outline: 2px solid #ffd700 !important;
+            outline-offset: 2px;
+            box-shadow: 0 0 16px rgba(255,215,0,0.5);
+            transition: outline 0.1s, box-shadow 0.1s;
+        }
+
+        @media (pointer: coarse) {
+            .btn, .member-btn, .toolbar-btn, .mode-group button, .nav-btn, .panel-close, .adjust-btn { min-height: 40px; min-width: 40px; padding: 6px 14px; }
+            .member-btn { min-height: 0; }
+            .btn { padding: 8px 22px; }
+            .timer-controls .btn { min-height: 34px; min-width: 34px; padding: 4px 12px; }
+        }
+
+        @media (max-width: 900px) {
+            .arena { flex-direction: column; height: auto; min-height: 0; }
+            .team-area { width: 100%; max-height: 220px; }
+            .team-area.defender-area { order: 1; }
+            .stage { order: 2; min-height: 260px; }
+            .team-area.challenger-area { order: 3; }
+            .member-list { max-height: 140px; }
+            .member-btn { flex: 0 0 auto; min-height: 40px; }
+            .timer-center { padding: 6px 14px; }
+            .countdown-display { font-size: 28px; }
+            .rank-float { min-width: 90px; padding: 4px 8px; }
+            .rank-float .item { font-size: 10px; }
+            .stage-content { padding-bottom: 60px; }
+            .stage-content .avatar { font-size: 50px; }
+            .stage-content .avatar.big { font-size: 80px; }
+            .header h1 { font-size: 20px; }
+        }
+        @media (max-width: 480px) {
+            .app { padding: 12px; }
+            .header h1 { font-size: 18px; }
+            .member-btn { font-size: 11px; padding: 6px 8px; }
+            .member-btn .order-tag { width: 18px; height: 18px; font-size: 10px; }
+            .stage-content .avatar { font-size: 40px; }
+            .stage-content .avatar.big { font-size: 60px; }
+            .rank-float { min-width: 70px; padding: 3px 6px; }
+            .rank-float .item { font-size: 9px; }
+            .stage-content { padding-bottom: 50px; }
+        }
+/* ===== 顶部工具栏紧凑布局（适配教学一体机，强制一行） ===== */
+.header {
+    flex-wrap: nowrap;
+    gap: 6px 10px;
+    min-width: 0;
+}
+.header h1 {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.header .info {
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
+}
+.header .info .badge {
+    padding: 2px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.back-link { flex-shrink: 0; }
+.back-link img { width: 32px; height: 32px; }
+.mode-group { padding: 2px; flex-shrink: 0; }
+.mode-group button { padding: 3px 10px; font-size: 12px; white-space: nowrap; }
+.voice-selector { font-size: 12px; flex-shrink: 0; }
+.voice-selector select { font-size: 12px; max-width: 110px; padding: 2px 4px; }
+.class-status { font-size: 12px; flex-shrink: 0; }
+.header .btn { padding: 4px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+
+/* 中等宽度（如 1024×768、1280×800、1366×768）进一步压缩 */
+@media (max-width: 1280px) {
+    .header { gap: 4px 8px; }
+    .header h1 { font-size: 16px; }
+    .header .info .badge { padding: 2px 8px; font-size: 11px; }
+    .mode-group button { padding: 2px 8px; font-size: 11px; }
+    .voice-selector { font-size: 11px; }
+    .voice-selector select { font-size: 11px; max-width: 90px; padding: 1px 3px; }
+    .class-status { font-size: 11px; }
+    .header .btn { padding: 3px 10px; font-size: 12px; }
+    .back-link img { width: 28px; height: 28px; }
+}
+
+/* 更窄屏幕（4:3 一体机或 1024 宽）继续压缩 */
+@media (max-width: 1024px) {
+    .header { gap: 3px 6px; }
+    .header h1 { font-size: 14px; }
+    .header .info .badge { padding: 1px 6px; font-size: 10px; }
+    .mode-group button { padding: 2px 6px; font-size: 10px; }
+    .voice-selector { font-size: 10px; }
+    .voice-selector select { font-size: 10px; max-width: 80px; padding: 1px 2px; }
+    .class-status { font-size: 10px; }
+    .header .btn { padding: 2px 8px; font-size: 11px; }
+    .back-link img { width: 24px; height: 24px; }
+}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>🏆 竞技课堂</h1>
+
+        <div class="mode-group">
+            <button class="active" data-mode="quiz">⚡ 抢答</button>
+            <button data-mode="board">📝 板演</button>
+        </div>
+
+        <div class="voice-selector">
+            🗣️ 音色
+            <select id="voiceSelect"><option value="">默认</option></select>
+        </div>
+
+        <span class="class-status" id="classStatus">⏸️ 未开始</span>
+
+        <button class="btn btn-outline" id="resetBtn">🔄 重置课堂</button>
+
+        <div class="info">
+            <span class="badge" id="classBadge">🏫 班级：加载中</span>
+            <span class="badge" id="roundBadge">🔄 第 1 轮</span>
+            <button class="btn btn-danger" id="classBtn" style="padding:3px 12px;font-size:13px;">🔕 下课</button>
+            <a href="home.html" class="back-link">
+                <img src="logo.svg" alt="logo">
+            </a>
+        </div>
+    </div>
+
+    <div class="arena">
+        <div class="team-area defender-area" id="defenderArea">
+            <div class="team-header">
+                <span class="team-name" id="defenderName">守擂组</span>
+                <span class="team-role">🛡️ 守擂</span>
+                <span class="team-score" id="defenderScore">0</span>
+            </div>
+            <div class="member-list" id="defenderList"></div>
+        </div>
+
+        <div class="stage" id="stage">
+            <div class="rank-float rank-float-left" id="rankLeft">
+                <div class="title">🏅 小组排名</div>
+                <div id="groupRankList"></div>
+            </div>
+            <div class="rank-float rank-float-right" id="rankRight">
+                <div class="title">👤 个人排名</div>
+                <div id="personRankList"></div>
+            </div>
+            <div class="stage-content" id="stageContent"></div>
+            <div class="timer-center" id="timerCenter">
+                <div class="countdown-display" id="countdownDisplay">0:00</div>
+                <div class="timer-controls">
+                    <button class="btn btn-success" id="startBtn" disabled>▶ 开始</button>
+                    <button class="btn btn-warning" id="pauseBtn" disabled>⏸</button>
+                    <button class="btn btn-danger" id="stopBtn" disabled>⏹</button>
+                </div>
+                <div class="timer-setting">
+                    <span>⏱️</span>
+                    <input type="number" id="minutesInput" value="1" min="0.5" step="0.5" />
+                    <span>分钟</span>
+                </div>
+                <span id="statusText">⏳ 就绪</span>
+            </div>
+        </div>
+
+        <div class="team-area challenger-area" id="challengerArea">
+            <div class="team-header">
+                <span class="team-name" id="challengerName">攻擂组</span>
+                <span class="team-role">⚔️ 攻擂</span>
+                <span class="team-score" id="challengerScore">0</span>
+            </div>
+            <div class="member-list" id="challengerList"></div>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <h3>📜 对战记录</h3>
+        <div class="history-table-wrap" id="historyWrap">
+            <table><thead><tr><th>轮次</th><th>模式</th><th>守擂</th><th>攻擂</th><th>得分详情</th><th>时间</th></tr></thead><tbody id="historyBody"></tbody></table>
+        </div>
+    </div>
+</div>
+
+<div class="honor-overlay" id="honorOverlay">
+    <div class="honor-box">
+        <span class="emoji" id="honorEmoji">🎉</span>
+        <div class="msg" id="honorMsg">太棒了！</div>
+        <div class="sub" id="honorSub">继续加油！</div>
+        <div class="slogan" id="honorSlogan">💬 "我的口号"</div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="scoreModal">
+    <div class="modal-box">
+        <h2>📝 评分</h2>
+        <div class="sub" id="scoreSub">调整每位学生的得分</div>
+        <div id="scoreRows"></div>
+        <div class="modal-actions">
+            <button class="btn btn-danger" id="scoreCancelBtn">取消</button>
+            <button class="btn btn-success" id="scoreConfirmBtn">✅ 确认得分</button>
+        </div>
+    </div>
+</div>
+
+<script src="dataManager.js"></script>
+<script>
+    // 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权
+    (function() {
+        'use strict';
+
+        const params = new URLSearchParams(window.location.search);
+        const CURRENT_CLASS = params.get('classId') || params.get('class') || localStorage.getItem('currentClassId') || '一班';
+        document.getElementById('classBadge').textContent = '🏫 班级：' + CURRENT_CLASS;
+
+        const STORAGE_KEY = 'arenaClassroom_' + CURRENT_CLASS;
+        let students = [];
+        let groups = [];
+        let groupSloganMap = {};
+
+        let state = {
+            mode: 'quiz',
+            round: 1,
+            defender: '',
+            challenger: '',
+            challengerQueue: [],
+            eliminatedGroups: [],
+            isClassOn: false,
+            isTimerRunning: false,
+            isPaused: false,
+            remainingSeconds: 0,
+            groupScores: {},
+            personScores: {},
+            selectedStudents: [],
+            history: [],
+            classStartSpeech: '欢迎来到数学课堂！',
+            used: {},
+        };
+
+        let timerInterval = null;
+        let lastPlayedSecond = -1;
+        let tempScores = {};
+
+        let speechQueue = [];
+        let isSpeaking = false;
+
+        function getSelectedVoice() {
+            const select = document.getElementById('voiceSelect');
+            if (!select || !select.value) return null;
+            const voices = window.speechSynthesis.getVoices();
+            return voices.find(v => v.name === select.value) || null;
+        }
+
+        function speakQueued(text, callback) {
+            if (!text || text.trim() === '') {
+                if (callback) callback();
+                return;
+            }
+            speechQueue.push({ text: text.trim(), callback: callback });
+            processSpeechQueue();
+        }
+
+        function processSpeechQueue() {
+            if (isSpeaking || speechQueue.length === 0) return;
+            isSpeaking = true;
+            const item = speechQueue.shift();
+            if (!('speechSynthesis' in window)) {
+                isSpeaking = false;
+                if (item.callback) item.callback();
+                processSpeechQueue();
+                return;
+            }
+            try {
+                const utterance = new SpeechSynthesisUtterance(item.text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                const selectedVoice = getSelectedVoice();
+                if (selectedVoice) utterance.voice = selectedVoice;
+                utterance.onend = function() {
+                    isSpeaking = false;
+                    if (item.callback) item.callback();
+                    processSpeechQueue();
+                };
+                utterance.onerror = function() {
+                    isSpeaking = false;
+                    if (item.callback) item.callback();
+                    processSpeechQueue();
+                };
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {
+                isSpeaking = false;
+                if (item.callback) item.callback();
+                processSpeechQueue();
+            }
+        }
+
+        function speakNow(text) {
+            speechQueue = [];
+            isSpeaking = false;
+            if (!('speechSynthesis' in window)) return;
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                const selectedVoice = getSelectedVoice();
+                if (selectedVoice) utterance.voice = selectedVoice;
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {}
+        }
+
+        const HONOR_MESSAGES = [
+            { emoji: '🔥', msg: '表现精彩，火力全开！', sub: '继续保持！' },
+            { emoji: '💪', msg: '敢于挑战，就是英雄！', sub: '超越自我！' },
+            { emoji: '🌟', msg: '你闪耀了全场！', sub: '再接再厉！' },
+            { emoji: '🎯', msg: '精准出击，目标明确！', sub: '继续精准！' },
+            { emoji: '🏅', msg: '勇敢参与，值得嘉奖！', sub: '每一次尝试都是进步！' },
+            { emoji: '🚀', msg: '快速反应，潜力无限！', sub: '加速冲刺！' },
+            { emoji: '🌈', msg: '你的表现让课堂更精彩！', sub: '继续发光！' },
+            { emoji: '🎈', msg: '大胆举手，你就是主角！', sub: '坚持就是胜利！' },
+        ];
+
+        function getRandomHonor() { return HONOR_MESSAGES[Math.floor(Math.random() * HONOR_MESSAGES.length)]; }
+        function formatTime(sec) { const m = Math.floor(sec / 60); const s = Math.floor(sec % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
+
+        function playDing() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 1200;
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch(e) {}
+        }
+
+        // ★ 新版 showHonor：接受对象，可展示"组名胜利 + 名字 + 宠物 + 口号"
+        function showHonor(info) {
+            if (typeof info === 'string') info = { studentName: info };
+            const overlay = document.getElementById('honorOverlay');
+            const honor = getRandomHonor();
+
+            const emoji = info.emoji || honor.emoji;
+            const msg = info.msg || honor.msg;
+            const studentName = info.studentName || '';
+            const animal = info.animal || '';
+            const slogan = info.slogan || '';
+
+            let subText = '';
+            if (studentName) {
+                subText = studentName;
+                if (animal) subText += '  ' + animal;
+            }
+
+            document.getElementById('honorEmoji').textContent = emoji;
+            document.getElementById('honorMsg').textContent = msg;
+            document.getElementById('honorSub').textContent = subText;
+            document.getElementById('honorSlogan').textContent = slogan ? `💬 "${slogan}"` : '';
+            overlay.classList.add('show');
+            clearTimeout(overlay._timeout);
+            overlay._timeout = setTimeout(() => overlay.classList.remove('show'), 2800);
+        }
+
+        function showFloatToast(text) {
+            const toast = document.createElement('div');
+            toast.textContent = text;
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#ffd700;padding:8px 24px;border-radius:30px;font-size:16px;z-index:9999;border:1px solid #ffd700;';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const saved = JSON.parse(raw);
+                    state.mode = saved.mode || 'quiz';
+                    state.round = saved.round || 1;
+                    state.defender = saved.defender || '';
+                    state.challenger = saved.challenger || '';
+                    state.challengerQueue = saved.challengerQueue || [];
+                    state.eliminatedGroups = saved.eliminatedGroups || [];
+                    state.history = saved.history || [];
+                    state.classStartSpeech = '欢迎来到数学课堂！';
+                    state.used = saved.used || {};
+                    state.groupScores = {};
+                    state.selectedStudents = [];
+                    state.isClassOn = false;
+                    state.isTimerRunning = false;
+                    state.isPaused = false;
+                    state.remainingSeconds = 0;
+                    groups.forEach(g => { if (!(g in state.groupScores)) state.groupScores[g] = 0; });
+                    return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        function saveState() {
+            try {
+                const data = {
+                    mode: state.mode,
+                    round: state.round,
+                    defender: state.defender,
+                    challenger: state.challenger,
+                    challengerQueue: state.challengerQueue,
+                    eliminatedGroups: state.eliminatedGroups,
+                    history: state.history,
+                    classStartSpeech: state.classStartSpeech,
+                    used: state.used,
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch(e) { console.warn('保存课堂状态失败', e); }
+        }
+
+        function loadStudentsData() {
+            const data = DataManager.loadClassData(CURRENT_CLASS);
+            if (!data || !data.students || data.students.length === 0) {
+                alert('❌ 未找到学生数据，请先在座次表导入学生。');
+                return false;
+            }
+            students = data.students;
+            students.forEach(s => {
+                if (!s.cats || s.cats.length !== 10) s.cats = [0,0,0,0,0,0,0,0,0,0];
+                if (s.seatOrder === undefined) s.seatOrder = 0;
+                if (s.groupName === undefined) s.groupName = '未分组';
+                if (s.slogan === undefined) s.slogan = '加油！';
+                if (typeof s.cats[3] !== 'number') s.cats[3] = 0;
+                s.safeNegative = s.cats[0] < 0;
+            });
+            const groupSet = new Set();
+            students.forEach(s => {
+                if (s.groupName && s.groupName !== '未分组') groupSet.add(s.groupName);
+            });
+            groups = Array.from(groupSet).sort((a,b) => a.localeCompare(b, 'zh-CN'));
+            if (groups.length < 2) {
+                alert('⚠️ 至少需要两个小组才能进行竞技课堂。请先在座次表创建小组。');
+                return false;
+            }
+            groupSloganMap = DataManager.loadGroupSloganMap(CURRENT_CLASS) || {};
+            DataManager.saveClassData(data, CURRENT_CLASS);
+            return true;
+        }
+
+        function resetChallengerQueue() {
+            const available = groups.filter(g => g !== state.defender && !state.eliminatedGroups.includes(g));
+            state.challengerQueue = available;
+            if (state.challengerQueue.length === 0) {
+                state.eliminatedGroups = [];
+                state.challengerQueue = groups.filter(g => g !== state.defender);
+            }
+        }
+
+        function getNextChallenger() {
+            if (state.challengerQueue.length === 0) resetChallengerQueue();
+            let next = state.challengerQueue[0];
+            while (next === state.defender || state.eliminatedGroups.includes(next)) {
+                state.challengerQueue = state.challengerQueue.filter(g => g !== next && !state.eliminatedGroups.includes(g));
+                if (state.challengerQueue.length === 0) resetChallengerQueue();
+                next = state.challengerQueue[0];
+            }
+            return next;
+        }
+
+        function initClassroom() {
+            if (!loadStudentsData()) return;
+            const hasSaved = loadState();
+            if (!hasSaved) {
+                state.defender = groups[0];
+                state.eliminatedGroups = [];
+                state.challengerQueue = groups.filter(g => g !== state.defender);
+                state.challenger = state.challengerQueue[0] || groups[1];
+                state.round = 1;
+                state.history = [];
+                state.used = {};
+                students.forEach(s => state.used[s.id] = false);
+                saveState();
+            } else {
+                if (!groups.includes(state.defender)) state.defender = groups[0];
+                if (!groups.includes(state.challenger)) state.challenger = groups[1];
+                if (!Array.isArray(state.challengerQueue) || state.challengerQueue.length === 0) resetChallengerQueue();
+                if (!state.challengerQueue.includes(state.challenger) || state.eliminatedGroups.includes(state.challenger)) {
+                    state.challenger = getNextChallenger();
+                }
+                students.forEach(s => { if (state.used[s.id] === undefined) state.used[s.id] = false; });
+                state.groupScores = {};
+                groups.forEach(g => state.groupScores[g] = 0);
+                state.selectedStudents = [];
+                state.isClassOn = false;
+                state.isTimerRunning = false;
+                state.remainingSeconds = 0;
+                saveState();
+            }
+            state.personScores = {};
+            students.forEach(s => {
+                state.personScores[s.id] = 0;
+            });
+            document.getElementById('roundBadge').textContent = '🔄 第 ' + state.round + ' 轮';
+            updateClassStatus();
+            renderAll();
+        }
+
+        function populateVoices() {
+            const select = document.getElementById('voiceSelect');
+            if (!select) return;
+            const voices = window.speechSynthesis.getVoices();
+            const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
+            const otherVoices = voices.filter(v => !v.lang.startsWith('zh'));
+            const sorted = [...zhVoices, ...otherVoices];
+            select.innerHTML = '<option value="">默认</option>';
+            sorted.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                opt.textContent = `${v.name} (${v.lang})`;
+                select.appendChild(opt);
+            });
+            try {
+                const saved = localStorage.getItem('selectedVoice_' + CURRENT_CLASS);
+                if (saved) select.value = saved;
+            } catch(e) {}
+        }
+
+        function initVoices() {
+            populateVoices();
+            window.speechSynthesis.onvoiceschanged = function() {
+                populateVoices();
+            };
+            document.getElementById('voiceSelect')?.addEventListener('change', function() {
+                try {
+                    localStorage.setItem('selectedVoice_' + CURRENT_CLASS, this.value);
+                } catch(e) {}
+            });
+        }
+
+        function renderAll() {
+            renderArena();
+            renderRanks();
+            renderHistory();
+            updateTimerUI();
+            updateButtons();
+            renderStage();
+            updateKeyboardHighlight();
+        }
+
+        function renderArena() {
+            const defenderMembers = getGroupMembers(state.defender);
+            const challengerMembers = getGroupMembers(state.challenger);
+
+            document.getElementById('defenderName').textContent = '🛡️ ' + state.defender;
+            document.getElementById('challengerName').textContent = '⚔️ ' + state.challenger;
+            document.getElementById('defenderScore').textContent = state.groupScores[state.defender] || 0;
+            document.getElementById('challengerScore').textContent = state.groupScores[state.challenger] || 0;
+
+            renderMemberList('defenderList', defenderMembers, state.defender);
+            renderMemberList('challengerList', challengerMembers, state.challenger);
+        }
+
+        function getGroupMembers(groupName) {
+            return students.filter(s => s.groupName === groupName && !s.onLeave);
+        }
+
+        function renderMemberList(containerId, members, groupName) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            members.sort((a,b) => (a.seatOrder||0) - (b.seatOrder||0));
+            members.forEach(s => {
+                const btn = document.createElement('button');
+                btn.className = 'member-btn';
+                btn.dataset.studentId = s.id;
+                btn.dataset.studentName = s.name;
+                btn.dataset.groupName = groupName;
+                const score = state.personScores[s.id] || 0;
+                const isUsed = state.used[s.id] || false;
+                const isSafeNegative = s.cats[0] < 0;
+                btn.innerHTML = `
+                    <span class="order-tag color-${s.seatOrder || 1}">${s.seatOrder || '?'}</span>
+                    <span class="member-name">${s.name}</span>
+                    <span class="score-tag">${score.toFixed(1)}</span>
+                `;
+                if (state.selectedStudents.some(st => st.id === s.id)) btn.classList.add('selected');
+                const disabled = isUsed || isSafeNegative || state.isTimerRunning || !state.isClassOn;
+                btn.disabled = disabled;
+                if (isUsed) btn.classList.add('used');
+                if (isSafeNegative) btn.classList.add('safe-negative');
+                if (!disabled) {
+                    btn.addEventListener('click', function() { onStudentSelect(this); });
+                }
+                btn.addEventListener('dblclick', function(e) {
+                    e.stopPropagation();
+                    const sid = parseInt(this.dataset.studentId);
+                    const student = students.find(st => st.id === sid);
+                    if (!student) return;
+                    const newSlogan = prompt('请输入该学生的自定义感言（获胜时播报）：', student.slogan || '加油！');
+                    if (newSlogan !== null && newSlogan.trim() !== '') {
+                        student.slogan = newSlogan.trim();
+                        const classData = DataManager.loadClassData(CURRENT_CLASS);
+                        if (classData) {
+                            const target = classData.students.find(d => d.id === sid);
+                            if (target) target.slogan = student.slogan;
+                            DataManager.saveClassData(classData, CURRENT_CLASS);
+                        }
+                        showFloatToast('✅ 感言已更新：' + student.slogan);
+                    }
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        function onStudentSelect(btn) {
+            if (!state.isClassOn) { alert('⏸️ 课堂未开始，请先点击“上课”'); return; }
+            if (state.isTimerRunning) { alert('⏳ 倒计时进行中，不能选择'); return; }
+            const id = parseInt(btn.dataset.studentId);
+            const name = btn.dataset.studentName;
+            const group = btn.dataset.groupName;
+            if (state.used[id] || students.find(s=>s.id===id)?.cats[0] < 0) return;
+
+            const selected = state.selectedStudents;
+            if (state.mode === 'quiz') {
+                if (selected.length === 1 && selected[0].id === id) {
+                    state.selectedStudents = [];
+                } else {
+                    state.selectedStudents = [{ id, name, group }];
+                }
+            } else {
+                const idx = selected.findIndex(s => s.id === id);
+                if (idx !== -1) {
+                    selected.splice(idx, 1);
+                } else {
+                    const sameGroup = selected.find(s => s.group === group);
+                    if (sameGroup) {
+                        const idx2 = selected.indexOf(sameGroup);
+                        selected.splice(idx2, 1);
+                    }
+                    selected.push({ id, name, group });
+                    if (selected.length > 2) selected.shift();
+                }
+                state.selectedStudents = selected;
+            }
+            saveState();
+            renderAll();
+            updateButtons();
+
+            if (state.mode === 'board' && state.selectedStudents.length === 1) {
+                const selectedGroup = state.selectedStudents[0].group;
+                const otherGroup = (selectedGroup === state.defender) ? state.challenger : state.defender;
+                const allBtns = document.querySelectorAll('.member-btn:not(.disabled):not(.used):not(.safe-negative)');
+                let targetBtn = null;
+                for (let btn of allBtns) {
+                    if (btn.dataset.groupName === otherGroup) {
+                        targetBtn = btn;
+                        break;
+                    }
+                }
+                if (targetBtn) {
+                    const btns = Array.from(allBtns);
+                    const idx = btns.indexOf(targetBtn);
+                    if (idx !== -1) {
+                        selectedOptionIndex = idx;
+                        updateStepOptions();
+                        highlightOption();
+                    }
+                } else {
+                    updateStepOptions();
+                    highlightOption();
+                }
+            }
+
+            const need = state.mode === 'quiz' ? 1 : 2;
+            if (state.selectedStudents.length >= need && currentStep === STEP_STUDENT) {
+                currentStep = STEP_TIME;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '⏱️ 设定时间（上减0.5，下加0.5，双击↓开始）';
+            } else if (currentStep === STEP_STUDENT) {
+                updateStepOptions();
+            }
+        }
+
+        function renderStage() {
+            const stage = document.getElementById('stageContent');
+            stage.innerHTML = '';
+            const selected = state.selectedStudents;
+            if (state.mode === 'quiz' && selected.length === 1) {
+                const s = selected[0];
+                const student = students.find(st => st.id === s.id);
+                if (student) {
+                    const div = document.createElement('div');
+                    div.className = 'avatar big';
+                    div.textContent = student.animal || '🐱';
+                    div.style.fontSize = '100px';
+                    stage.appendChild(div);
+                    const label = document.createElement('div');
+                    label.className = 'avatar-label';
+                    label.textContent = student.name;
+                    stage.appendChild(label);
+                }
+            } else if (state.mode === 'board' && selected.length === 2) {
+                const s1 = selected[0];
+                const s2 = selected[1];
+                const st1 = students.find(st => st.id === s1.id);
+                const st2 = students.find(st => st.id === s2.id);
+                if (st1 && st2) {
+                    const row = document.createElement('div');
+                    row.className = 'avatar-row';
+                    const div1 = document.createElement('div');
+                    div1.className = 'avatar fly-in';
+                    div1.textContent = st1.animal || '🐱';
+                    div1.style.fontSize = '60px';
+                    const div2 = document.createElement('div');
+                    div2.className = 'avatar fly-in';
+                    div2.textContent = st2.animal || '🐱';
+                    div2.style.fontSize = '60px';
+                    row.appendChild(div1);
+                    row.appendChild(div2);
+                    stage.appendChild(row);
+                    const labelRow = document.createElement('div');
+                    labelRow.style.display = 'flex';
+                    labelRow.style.gap = '40px';
+                    labelRow.style.marginTop = '8px';
+                    const l1 = document.createElement('span');
+                    l1.textContent = st1.name;
+                    l1.style.color = '#ffd700';
+                    l1.style.fontWeight = '700';
+                    l1.style.fontSize = '18px';
+                    l1.style.textShadow = '0 2px 12px rgba(0,0,0,0.8)';
+                    const l2 = document.createElement('span');
+                    l2.textContent = st2.name;
+                    l2.style.color = '#00b4ff';
+                    l2.style.fontWeight = '700';
+                    l2.style.fontSize = '18px';
+                    l2.style.textShadow = '0 2px 12px rgba(0,0,0,0.8)';
+                    labelRow.appendChild(l1);
+                    labelRow.appendChild(l2);
+                    stage.appendChild(labelRow);
+                    setTimeout(() => {
+                        div1.classList.add('bounce');
+                        div2.classList.add('bounce');
+                    }, 400);
+                }
+            } else {
+                const div = document.createElement('div');
+                div.textContent = '👆 点击两侧成员选择';
+                div.style.cssText = 'color:#888;font-size:18px;text-shadow:0 2px 8px rgba(0,0,0,0.8);';
+                stage.appendChild(div);
+            }
+        }
+
+        function startTimer() {
+            if (state.selectedStudents.length === 0) {
+                alert('请先选择学生（抢答模式选1人，板演模式选2人）');
+                return;
+            }
+            if (state.mode === 'board' && state.selectedStudents.length < 2) {
+                alert('板演模式需要选择守擂和攻擂各一名学生');
+                return;
+            }
+            const minutes = parseFloat(document.getElementById('minutesInput').value) || 1;
+            if (minutes <= 0) { alert('请设置有效分钟数'); return; }
+            state.remainingSeconds = minutes * 60;
+            state.isTimerRunning = true;
+            state.isPaused = false;
+            lastPlayedSecond = -1;
+            updateTimerUI();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('statusText').textContent = '⏳ 倒计时中...';
+            if (currentStep !== STEP_TIMER) {
+                currentStep = STEP_TIMER;
+                updateStepOptions();
+                highlightOption();
+            }
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!state.isPaused) {
+                    state.remainingSeconds -= 0.1;
+                    const secRemain = state.remainingSeconds;
+                    const secInt = Math.ceil(secRemain);
+
+                    if (secInt !== lastPlayedSecond && secInt > 0 && secInt <= 3) {
+                        lastPlayedSecond = secInt;
+                        speakQueued(secInt.toString());
+                    }
+                    if (secInt !== lastPlayedSecond && secInt % 60 === 0 && secInt > 3) {
+                        playDing();
+                        lastPlayedSecond = secInt;
+                    }
+
+                    if (state.remainingSeconds <= 0) {
+                        state.remainingSeconds = 0;
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        state.isTimerRunning = false;
+                        document.getElementById('statusText').textContent = '⏰ 时间到！';
+                        showScoreModal();
+                    }
+                    updateTimerUI();
+                }
+            }, 100);
+            renderAll();
+            updateButtons();
+        }
+
+        function pauseTimer() {
+            if (!state.isTimerRunning) return;
+            state.isPaused = !state.isPaused;
+            document.getElementById('pauseBtn').textContent = state.isPaused ? '▶️' : '⏸';
+            document.getElementById('statusText').textContent = state.isPaused ? '⏸️ 已暂停' : '⏳ 继续中...';
+        }
+
+        function stopTimer() {
+            if (state.isTimerRunning) {
+                if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                state.isTimerRunning = false;
+                state.isPaused = false;
+                state.remainingSeconds = 0;
+                document.getElementById('statusText').textContent = '⏹ 已终止';
+                if (state.selectedStudents.length > 0) showScoreModal();
+                else { updateButtons(); renderAll(); }
+            } else {
+                state.remainingSeconds = 0;
+                updateTimerUI();
+                document.getElementById('statusText').textContent = '⏹ 已终止';
+                updateButtons();
+                renderAll();
+            }
+        }
+
+        function updateTimerUI() {
+            document.getElementById('countdownDisplay').textContent = formatTime(state.remainingSeconds);
+        }
+
+        let scoringFocusIndex = 0;
+
+        function showScoreModal() {
+            const modal = document.getElementById('scoreModal');
+            const rowsContainer = document.getElementById('scoreRows');
+            rowsContainer.innerHTML = '';
+            const selected = state.selectedStudents;
+            if (selected.length === 0) { alert('没有学生需要评分'); return; }
+
+            tempScores = {};
+            const isQuiz = state.mode === 'quiz';
+            selected.forEach(s => {
+                const student = students.find(st => st.id === s.id);
+                const full = student ? student.seatOrder || 0 : 0;
+                tempScores[s.id] = isQuiz ? 0 : full;
+            });
+
+            document.getElementById('scoreSub').textContent = isQuiz ?
+                '抢答模式：点击 +1 加分，上限为排号' :
+                '板演模式：点击 −1 扣分，下限为 0';
+
+            selected.forEach(s => {
+                const student = students.find(st => st.id === s.id);
+                const full = student ? student.seatOrder || 0 : 0;
+                const row = document.createElement('div');
+                row.className = 'score-row';
+                row.dataset.studentId = s.id;
+                const current = tempScores[s.id];
+                const btnLabel = isQuiz ? '+1' : '−1';
+                const action = isQuiz ? 'add' : 'sub';
+                row.innerHTML = `
+                    <div class="info">
+                        <span class="name">${s.name} <span class="group-tag">${s.group}</span></span>
+                        <div class="full">排号：${full}</div>
+                    </div>
+                    <span class="current-score" id="scoreDisplay_${s.id}">${current.toFixed(1)}</span>
+                    <button class="adjust-btn" data-id="${s.id}" data-action="${action}" data-full="${full}">${btnLabel}</button>
+                `;
+                rowsContainer.appendChild(row);
+            });
+
+            rowsContainer.querySelectorAll('.adjust-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.dataset.id);
+                    const full = parseInt(this.dataset.full);
+                    const action = this.dataset.action;
+                    let current = tempScores[id];
+                    if (action === 'add') {
+                        if (current < full) { tempScores[id] += 1; document.getElementById('scoreDisplay_' + id).textContent = tempScores[id].toFixed(1); if (tempScores[id] >= full) this.disabled = true; }
+                        else alert('已达到上限（排号）');
+                    } else {
+                        if (current > 0) { tempScores[id] -= 1; document.getElementById('scoreDisplay_' + id).textContent = tempScores[id].toFixed(1); if (tempScores[id] <= 0) this.disabled = true; }
+                        else alert('已达到最低 0 分');
+                    }
+                });
+            });
+
+            scoringFocusIndex = 0;
+            updateScoringHighlight();
+            modal.classList.add('active');
+            if (currentStep !== STEP_SCORE) {
+                currentStep = STEP_SCORE;
+                updateStepOptions();
+                highlightOption();
+            }
+        }
+
+        function updateScoringHighlight() {
+            const rows = document.querySelectorAll('#scoreModal .score-row');
+            rows.forEach((row, i) => {
+                row.classList.toggle('active-scoring', i === scoringFocusIndex);
+            });
+        }
+
+        function closeScoreModal() { 
+            document.getElementById('scoreModal').classList.remove('active');
+            if (currentStep === STEP_SCORE) {
+                currentStep = STEP_MODE;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+            }
+        }
+
+        function confirmScores() {
+            const selected = state.selectedStudents;
+            if (selected.length === 0) return;
+            let details = [];
+            let oldDefender = state.defender;
+            let oldChallenger = state.challenger;
+
+            let speechTexts = [];
+            let winnerStudent = null;
+            let maxScore = -1;
+
+            let defenderDelta = 0, challengerDelta = 0;
+
+            // ★ 只做数据累加，不再在这里弹窗
+            selected.forEach(s => {
+                const score = tempScores[s.id] || 0;
+                state.personScores[s.id] = (state.personScores[s.id] || 0) + score;
+                state.groupScores[s.group] = (state.groupScores[s.group] || 0) + score;
+                state.used[s.id] = true;
+                details.push(`${s.name} +${score}`);
+                if (s.group === oldDefender) defenderDelta += score;
+                else if (s.group === oldChallenger) challengerDelta += score;
+
+                if (score > maxScore) {
+                    maxScore = score;
+                    winnerStudent = s;
+                }
+            });
+
+            let winnerGroup = '';
+            if (defenderDelta > challengerDelta) winnerGroup = oldDefender;
+            else if (challengerDelta > defenderDelta) winnerGroup = oldChallenger;
+            else winnerGroup = '平局';
+
+            if (winnerGroup === '平局') {
+                if (defenderDelta === 0 && challengerDelta === 0) {
+                    speechTexts.push('比分0:0，双方继续');
+                } else {
+                    if (!state.eliminatedGroups.includes(oldDefender)) state.eliminatedGroups.push(oldDefender);
+                    if (!state.eliminatedGroups.includes(oldChallenger)) state.eliminatedGroups.push(oldChallenger);
+
+                    const remaining = groups.filter(g => !state.eliminatedGroups.includes(g));
+
+                    if (remaining.length >= 2) {
+                        state.defender = remaining[0];
+                        state.challengerQueue = remaining.slice(1);
+                        state.challenger = state.challengerQueue.shift();
+                    } else if (remaining.length === 1) {
+                        state.defender = remaining[0];
+                        state.eliminatedGroups = [];
+                        const others = groups.filter(g => g !== state.defender);
+                        state.challengerQueue = others.slice(1);
+                        state.challenger = others[0];
+                    } else {
+                        state.eliminatedGroups = [];
+                        state.defender = groups[0];
+                        state.challengerQueue = groups.slice(2);
+                        state.challenger = groups[1];
+                    }
+                    speechTexts.push('本轮平局，双方下场');
+                }
+            } else {
+                let loser = (winnerGroup === oldDefender) ? oldChallenger : oldDefender;
+                if (!state.eliminatedGroups.includes(loser)) state.eliminatedGroups.push(loser);
+                state.challengerQueue = state.challengerQueue.filter(g => g !== oldChallenger);
+
+                let newDefender = oldDefender;
+                if (winnerGroup === oldChallenger) newDefender = oldChallenger;
+                state.defender = newDefender;
+                state.eliminatedGroups = state.eliminatedGroups.filter(g => g !== newDefender);
+
+                resetChallengerQueue();
+                let newChallenger = getNextChallenger();
+                while (state.eliminatedGroups.includes(newChallenger) || newChallenger === state.defender) {
+                    state.challengerQueue = state.challengerQueue.filter(g => g !== newChallenger);
+                    newChallenger = getNextChallenger();
+                }
+                state.challenger = newChallenger;
+
+                if (winnerStudent && maxScore > 0) {
+                    const student = students.find(st => st.id === winnerStudent.id);
+                    const slogan = student ? student.slogan || '' : '';
+                    let winText = `${winnerStudent.group}获胜`;
+                    if (slogan) {
+                        winText += `，${slogan}`;
+                    }
+                    speechTexts.push(winText);
+                } else {
+                    const slogan = groupSloganMap[winnerGroup] || '';
+                    let winText = `${winnerGroup}获胜`;
+                    if (slogan) {
+                        winText += `，${slogan}`;
+                    }
+                    speechTexts.push(winText);
+                }
+            }
+
+            // ★★★ 只弹一次窗：展示胜利组 + 胜利者名字 + 宠物 + 口号 ★★★
+            if (winnerGroup !== '平局') {
+                // 从获胜组里挑得分最高的学生作为"胜利者"
+                let winnerInGroup = null;
+                let bestScore = -Infinity;
+                selected.forEach(s => {
+                    if (s.group === winnerGroup) {
+                        const sc = tempScores[s.id] || 0;
+                        if (sc > bestScore) {
+                            bestScore = sc;
+                            winnerInGroup = s;
+                        }
+                    }
+                });
+
+                let wName = '', wAnimal = '', wSlogan = '';
+                if (winnerInGroup) {
+                    const wStudent = students.find(st => st.id === winnerInGroup.id);
+                    if (wStudent) {
+                        wName = wStudent.name;
+                        wAnimal = wStudent.animal || '🐱';
+                        const rawSlogan = wStudent.slogan || '';
+                        // 过滤掉默认的"加油！"之类空话，只有自定义口号才展示
+                        if (rawSlogan && rawSlogan.trim() !== '' && rawSlogan.trim() !== '加油！') {
+                            wSlogan = rawSlogan.trim();
+                        }
+                    }
+                }
+
+                setTimeout(() => {
+                    showHonor({
+                        emoji: '🏆',
+                        msg: `${winnerGroup} 胜利！`,
+                        studentName: wName,
+                        animal: wAnimal,
+                        slogan: wSlogan
+                    });
+                }, 300);
+            }
+
+            const record = {
+                round: state.round,
+                mode: state.mode === 'quiz' ? '抢答' : '板演',
+                defender: oldDefender,
+                challenger: oldChallenger,
+                details: details.join('; '),
+                winner: winnerGroup,
+                timestamp: new Date().toLocaleString()
+            };
+            state.history.push(record);
+            state.round += 1;
+            state.selectedStudents = [];
+
+            saveState();
+            closeScoreModal();
+            renderAll();
+            updateButtons();
+            document.getElementById('statusText').textContent = '✅ 评分完成';
+
+            speechTexts.forEach((text, idx) => {
+                setTimeout(() => {
+                    speakQueued(text);
+                }, idx * 1200);
+            });
+
+            currentStep = STEP_MODE;
+            updateStepOptions();
+            highlightOption();
+            document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+        }
+
+        function syncScoresToSeat() {
+            if (!students.length) return;
+            const classData = DataManager.loadClassData(CURRENT_CLASS);
+            if (!classData) return;
+            students.forEach(s => {
+                const addScore = state.personScores[s.id] || 0;
+                if (addScore !== 0) {
+                    s.cats[3] = (s.cats[3] || 0) + addScore;
+                    const target = classData.students.find(d => d.id === s.id);
+                    if (target) {
+                        target.cats[3] = s.cats[3];
+                    }
+                }
+            });
+            DataManager.saveClassData(classData, CURRENT_CLASS);
+        }
+
+        function getTopGroupAndStudent() {
+            let topGroup = null, topGroupScore = -Infinity;
+            groups.forEach(g => {
+                const score = state.groupScores[g] || 0;
+                if (score > topGroupScore) {
+                    topGroupScore = score;
+                    topGroup = g;
+                }
+            });
+            if (topGroup === null && groups.length > 0) topGroup = groups[0];
+
+            let topStudent = null, topStudentScore = -Infinity;
+            students.forEach(s => {
+                if (s.onLeave) return;
+                const score = state.personScores[s.id] || 0;
+                if (score > topStudentScore) {
+                    topStudentScore = score;
+                    topStudent = s;
+                }
+            });
+            return { topGroup, topGroupScore, topStudent, topStudentScore };
+        }
+
+        function toggleClass() {
+            if (!state.isClassOn) {
+                state.groupScores = {};
+                groups.forEach(g => state.groupScores[g] = 0);
+                state.personScores = {};
+                students.forEach(s => state.personScores[s.id] = 0);
+                state.selectedStudents = [];
+                students.forEach(s => state.used[s.id] = false);
+                state.isClassOn = true;
+                document.getElementById('classBtn').textContent = '🔕 下课';
+                document.getElementById('classStatus').textContent = '🔔 上课中';
+                speakQueued(state.classStartSpeech);
+                document.getElementById('startBtn').disabled = false;
+                saveState();
+                renderAll();
+                showFloatToast('🔔 课堂已开始');
+                currentStep = STEP_MODE;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+            } else {
+                if (state.isTimerRunning) stopTimer();
+                const { topGroup, topGroupScore, topStudent, topStudentScore } = getTopGroupAndStudent();
+                syncScoresToSeat();
+
+                state.groupScores = {};
+                groups.forEach(g => state.groupScores[g] = 0);
+                state.personScores = {};
+                students.forEach(s => state.personScores[s.id] = 0);
+                state.selectedStudents = [];
+                state.history = [];
+                state.used = {};
+                students.forEach(s => state.used[s.id] = false);
+                state.isClassOn = false;
+                document.getElementById('classBtn').textContent = '🔔 上课';
+                document.getElementById('classStatus').textContent = '⏸️ 已下课';
+                document.getElementById('startBtn').disabled = true;
+
+                if (topGroup && topGroupScore > 0) {
+                    let speech = `本节课冠军小组是 ${topGroup}`;
+                    if (topStudent && topStudentScore > 0) {
+                        speech += `，冠军个人是 ${topStudent.name}`;
+                    }
+                    speakNow(speech);
+                } else {
+                    speakNow('本节课所有小组均为 0 分，同学们再见！');
+                }
+
+                saveState();
+                renderAll();
+                updateButtons();
+                showFloatToast('🔕 课堂已结束');
+                currentStep = STEP_MODE;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+            }
+        }
+
+        function updateButtons() {
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            if (state.isClassOn) {
+                if (!state.isTimerRunning) { startBtn.disabled = false; pauseBtn.disabled = true; stopBtn.disabled = true; }
+                else { startBtn.disabled = true; pauseBtn.disabled = false; stopBtn.disabled = false; }
+            } else {
+                startBtn.disabled = true; pauseBtn.disabled = true; stopBtn.disabled = true;
+            }
+            document.getElementById('classStatus').textContent = state.isClassOn ? '🔔 上课中' : '⏸️ 未开始';
+        }
+
+        function updateClassStatus() {
+            document.getElementById('classStatus').textContent = state.isClassOn ? '🔔 上课中' : '⏸️ 未开始';
+            document.getElementById('classBtn').textContent = state.isClassOn ? '🔕 下课' : '🔔 上课';
+        }
+
+        function renderRanks() {
+            const groupContainer = document.getElementById('groupRankList');
+            const sortedGroups = groups.slice()
+                .filter(g => (state.groupScores[g] || 0) > 0)
+                .sort((a,b) => (state.groupScores[b]||0) - (state.groupScores[a]||0));
+            groupContainer.innerHTML = '';
+            if (sortedGroups.length === 0) {
+                groupContainer.innerHTML = '<div class="empty">暂无</div>';
+            } else {
+                sortedGroups.forEach((g, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    div.innerHTML = `<span class="pos">${idx+1}</span><span class="name">${g}</span><span class="score">${(state.groupScores[g]||0).toFixed(1)}</span>`;
+                    groupContainer.appendChild(div);
+                });
+            }
+
+            const personContainer = document.getElementById('personRankList');
+            const sortedPersons = students.slice()
+                .filter(s => !s.onLeave && (state.personScores[s.id] || 0) > 0)
+                .sort((a,b) => (state.personScores[b.id]||0) - (state.personScores[a.id]||0));
+            personContainer.innerHTML = '';
+            if (sortedPersons.length === 0) {
+                personContainer.innerHTML = '<div class="empty">暂无</div>';
+            } else {
+                sortedPersons.forEach((s, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    div.innerHTML = `<span class="pos">${idx+1}</span><span class="name">${s.name}</span><span class="score">${(state.personScores[s.id]||0).toFixed(1)}</span>`;
+                    personContainer.appendChild(div);
+                });
+            }
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+            if (!state.history || state.history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#666;">暂无记录</td></tr>';
+                return;
+            }
+            const records = state.history.slice(-30).reverse();
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.round}</td><td>${r.mode}</td><td>${r.defender}</td><td>${r.challenger}</td><td>${r.details} ${r.winner !== '平局' ? '🏆 '+r.winner : '⚖️ 平局'}</td><td>${r.timestamp}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function resetClassroom() {
+            if (!confirm('重置将清除本节课所有得分和历史记录，确定吗？')) return;
+            localStorage.removeItem(STORAGE_KEY);
+            state = {
+                mode: 'quiz',
+                round: 1,
+                defender: groups[0],
+                challenger: groups[1],
+                challengerQueue: groups.filter(g => g !== groups[0]),
+                eliminatedGroups: [],
+                isClassOn: false,
+                isTimerRunning: false,
+                isPaused: false,
+                remainingSeconds: 0,
+                groupScores: {},
+                personScores: {},
+                selectedStudents: [],
+                history: [],
+                classStartSpeech: '欢迎来到数学课堂！',
+                used: {},
+            };
+            groups.forEach(g => state.groupScores[g] = 0);
+            students.forEach(s => { state.personScores[s.id] = 0; state.used[s.id] = false; });
+            saveState();
+            renderAll();
+            updateButtons();
+            document.getElementById('statusText').textContent = '🔄 已重置';
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+            currentStep = STEP_MODE;
+            updateStepOptions();
+            highlightOption();
+            document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+        }
+
+        function switchMode(mode) {
+            if (state.isTimerRunning) { alert('倒计时进行中，不能切换模式'); return; }
+            state.mode = mode;
+            state.selectedStudents = [];
+            document.querySelectorAll('.mode-group button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            saveState();
+            renderAll();
+            updateButtons();
+            document.getElementById('statusText').textContent = `📌 ${mode === 'quiz' ? '抢答' : '板演'}模式`;
+            if (currentStep === STEP_MODE) updateStepOptions();
+        }
+
+        const STEP_MODE = 0;
+        const STEP_STUDENT = 1;
+        const STEP_TIME = 2;
+        const STEP_TIMER = 3;
+        const STEP_SCORE = 4;
+
+        let currentStep = STEP_MODE;
+        let stepOptions = [];
+        let selectedOptionIndex = 0;
+
+        let upPressCount = 0;
+        let downPressCount = 0;
+        let upPressTimer = null;
+        let downPressTimer = null;
+        const DOUBLE_CLICK_DELAY = 400;
+
+        function goToStep(step) {
+            currentStep = step;
+            if (step === STEP_SCORE) return;
+            updateStepOptions();
+            const statusText = document.getElementById('statusText');
+            switch(step) {
+                case STEP_MODE: statusText.textContent = '📌 选择模式（上下切换，双击↓确认）'; break;
+                case STEP_STUDENT: statusText.textContent = '👤 选择学生（上下切换，双击↓确认）'; break;
+                case STEP_TIME: statusText.textContent = '⏱️ 设定时间（上减0.5，下加0.5，双击↓开始）'; break;
+                case STEP_TIMER: statusText.textContent = '⏳ 倒计时中（短按↑暂停，↓继续）'; break;
+                default: break;
+            }
+            document.querySelectorAll('.key-highlight').forEach(el => el.classList.remove('key-highlight'));
+            highlightOption();
+        }
+
+        function updateStepOptions() {
+            stepOptions = [];
+            switch(currentStep) {
+                case STEP_MODE: {
+                    const btns = document.querySelectorAll('.mode-group button');
+                    btns.forEach(b => stepOptions.push(b));
+                    let found = -1;
+                    btns.forEach((b, i) => { if (b.classList.contains('active')) found = i; });
+                    selectedOptionIndex = found !== -1 ? found : 0;
+                    break;
+                }
+                case STEP_STUDENT: {
+                    const btns = document.querySelectorAll('.member-btn:not(.disabled):not(.used):not(.safe-negative)');
+                    btns.forEach(b => stepOptions.push(b));
+                    if (state.mode === 'board' && state.selectedStudents.length === 1) {
+                        // 保留
+                    } else if (state.selectedStudents.length > 0) {
+                        const lastId = state.selectedStudents[state.selectedStudents.length - 1].id;
+                        let found = -1;
+                        btns.forEach((b, i) => { if (parseInt(b.dataset.studentId) === lastId) found = i; });
+                        selectedOptionIndex = found !== -1 ? found : 0;
+                    } else {
+                        selectedOptionIndex = 0;
+                    }
+                    break;
+                }
+                case STEP_TIME: {
+                    const input = document.getElementById('minutesInput');
+                    stepOptions = [input];
+                    selectedOptionIndex = 0;
+                    break;
+                }
+                case STEP_TIMER: {
+                    stepOptions = [];
+                    selectedOptionIndex = -1;
+                    break;
+                }
+                default: break;
+            }
+            if (stepOptions.length === 0) selectedOptionIndex = -1;
+            if (selectedOptionIndex >= stepOptions.length) selectedOptionIndex = stepOptions.length - 1;
+            if (selectedOptionIndex < 0 && stepOptions.length > 0) selectedOptionIndex = 0;
+        }
+
+        function highlightOption() {
+            document.querySelectorAll('.key-highlight').forEach(el => el.classList.remove('key-highlight'));
+            if (currentStep === STEP_SCORE || stepOptions.length === 0 || selectedOptionIndex < 0 || selectedOptionIndex >= stepOptions.length) return;
+            const el = stepOptions[selectedOptionIndex];
+            if (el) {
+                el.classList.add('key-highlight');
+                if (el.tagName === 'INPUT') { el.focus(); el.select(); }
+            }
+        }
+
+        function updateKeyboardHighlight() {
+            if (currentStep === STEP_SCORE) return;
+            updateStepOptions();
+            highlightOption();
+        }
+
+        function handleShortUp() {
+            if (currentStep === STEP_SCORE) {
+                const rows = document.querySelectorAll('#scoreModal .score-row');
+                const currentRow = rows[scoringFocusIndex];
+                if (!currentRow) return;
+                const addBtn = currentRow.querySelector('.adjust-btn[data-action="add"]');
+                if (addBtn && !addBtn.disabled) addBtn.click();
+                return;
+            }
+            if (currentStep === STEP_TIMER) {
+                if (state.isTimerRunning) pauseTimer();
+                return;
+            }
+            if (stepOptions.length === 0) return;
+            selectedOptionIndex = (selectedOptionIndex - 1 + stepOptions.length) % stepOptions.length;
+            highlightOption();
+
+            if (currentStep === STEP_MODE) {
+                const targetBtn = stepOptions[selectedOptionIndex];
+                if (targetBtn) {
+                    const mode = targetBtn.dataset.mode;
+                    if (mode && mode !== state.mode) {
+                        switchMode(mode);
+                    }
+                }
+                return;
+            }
+
+            if (currentStep === STEP_TIME && stepOptions[selectedOptionIndex].tagName === 'INPUT') {
+                const input = stepOptions[selectedOptionIndex];
+                let val = parseFloat(input.value) || 1;
+                val = Math.max(0.5, val - 0.5);
+                input.value = val;
+                input.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function handleShortDown() {
+            if (currentStep === STEP_SCORE) {
+                const rows = document.querySelectorAll('#scoreModal .score-row');
+                const currentRow = rows[scoringFocusIndex];
+                if (!currentRow) return;
+                const subBtn = currentRow.querySelector('.adjust-btn[data-action="sub"]');
+                if (subBtn && !subBtn.disabled) subBtn.click();
+                return;
+            }
+            if (currentStep === STEP_TIMER) {
+                if (state.isTimerRunning && state.isPaused) pauseTimer();
+                return;
+            }
+            if (stepOptions.length === 0) return;
+            selectedOptionIndex = (selectedOptionIndex + 1) % stepOptions.length;
+            highlightOption();
+
+            if (currentStep === STEP_MODE) {
+                const targetBtn = stepOptions[selectedOptionIndex];
+                if (targetBtn) {
+                    const mode = targetBtn.dataset.mode;
+                    if (mode && mode !== state.mode) {
+                        switchMode(mode);
+                    }
+                }
+                return;
+            }
+
+            if (currentStep === STEP_TIME && stepOptions[selectedOptionIndex].tagName === 'INPUT') {
+                const input = stepOptions[selectedOptionIndex];
+                let val = parseFloat(input.value) || 1;
+                val = val + 0.5;
+                input.value = val;
+                input.dispatchEvent(new Event('change'));
+            }
+        }
+
+        function handleConfirm() {
+            if (currentStep === STEP_SCORE) {
+                const rows = document.querySelectorAll('#scoreModal .score-row');
+                if (scoringFocusIndex < rows.length - 1) {
+                    scoringFocusIndex++;
+                    updateScoringHighlight();
+                    const name = rows[scoringFocusIndex].querySelector('.name').textContent;
+                    showFloatToast(`👉 切换到 ${name}`);
+                    return;
+                } else {
+                    document.getElementById('scoreConfirmBtn').click();
+                }
+                return;
+            }
+            if (currentStep === STEP_TIMER) {
+                if (state.isTimerRunning) {
+                    stopTimer();
+                    showFloatToast('⏹ 已结束计时');
+                }
+                return;
+            }
+            switch(currentStep) {
+                case STEP_MODE: {
+                    if (state.isClassOn) {
+                        const activeBtn = document.querySelector('.mode-group button.active');
+                        if (activeBtn) {
+                            const mode = activeBtn.dataset.mode;
+                            if (mode && mode !== state.mode) {
+                                switchMode(mode);
+                            }
+                        }
+                        currentStep = STEP_STUDENT;
+                        updateStepOptions();
+                        highlightOption();
+                        document.getElementById('statusText').textContent = '👤 选择学生（上下切换，双击↓确认）';
+                        showFloatToast('✅ 进入学生选择');
+                    } else {
+                        showFloatToast('⚠️ 请先点击“上课”');
+                    }
+                    break;
+                }
+                case STEP_STUDENT: {
+                    const btns = stepOptions;
+                    if (btns.length === 0 || selectedOptionIndex < 0 || selectedOptionIndex >= btns.length) {
+                        showFloatToast('⚠️ 没有可选学生');
+                        return;
+                    }
+                    const btn = btns[selectedOptionIndex];
+                    if (btn) {
+                        btn.click();
+                        const need = state.mode === 'quiz' ? 1 : 2;
+                        if (state.selectedStudents.length >= need) {
+                            currentStep = STEP_TIME;
+                            updateStepOptions();
+                            highlightOption();
+                            document.getElementById('statusText').textContent = '⏱️ 设定时间（上减0.5，下加0.5，双击↓开始）';
+                            showFloatToast('✅ 已选够学生，进入时间设定');
+                        } else {
+                            showFloatToast(`👤 已选 ${state.selectedStudents.length}/${need}，继续选择`);
+                            updateStepOptions();
+                            highlightOption();
+                        }
+                    }
+                    break;
+                }
+                case STEP_TIME: {
+                    if (state.selectedStudents.length === 0) {
+                        showFloatToast('⚠️ 请先选择学生');
+                        return;
+                    }
+                    startTimer();
+                    showFloatToast('▶️ 开始计时');
+                    break;
+                }
+                default: break;
+            }
+        }
+
+        function handleBack() {
+            if (currentStep === STEP_SCORE) {
+                showFloatToast('💡 评分中请使用双击↓确认或取消');
+                return;
+            }
+            if (currentStep === STEP_TIMER) {
+                if (state.isTimerRunning) {
+                    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                    state.isTimerRunning = false;
+                    state.isPaused = false;
+                    state.remainingSeconds = 0;
+                    updateTimerUI();
+                    document.getElementById('statusText').textContent = '⏹ 已重置';
+                    updateButtons();
+                    currentStep = STEP_TIME;
+                    updateStepOptions();
+                    highlightOption();
+                    document.getElementById('statusText').textContent = '⏱️ 设定时间（上减0.5，下加0.5，双击↓开始）';
+                    showFloatToast('↺ 已重置计时，重新设定时间');
+                }
+                return;
+            }
+            if (currentStep === STEP_MODE) {
+                showFloatToast('📍 已是最开始');
+                return;
+            }
+            if (currentStep === STEP_STUDENT) {
+                currentStep = STEP_MODE;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+                showFloatToast('↩ 返回模式选择');
+                return;
+            }
+            if (currentStep === STEP_TIME) {
+                currentStep = STEP_STUDENT;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '👤 选择学生（上下切换，双击↓确认）';
+                showFloatToast('↩ 返回学生选择');
+                return;
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            const tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+                if (e.target.id === 'minutesInput' && (e.key === 'PageUp' || e.key === 'PageDown' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                    e.preventDefault();
+                } else {
+                    return;
+                }
+            }
+
+            const key = e.key;
+            const isUp = (key === 'PageUp' || key === 'ArrowUp');
+            const isDown = (key === 'PageDown' || key === 'ArrowDown');
+
+            if (isDown) {
+                e.preventDefault();
+                downPressCount++;
+                if (downPressCount === 1) {
+                    clearTimeout(downPressTimer);
+                    downPressTimer = setTimeout(() => {
+                        handleShortDown();
+                        downPressCount = 0;
+                    }, DOUBLE_CLICK_DELAY);
+                } else if (downPressCount >= 2) {
+                    clearTimeout(downPressTimer);
+                    downPressCount = 0;
+                    handleConfirm();
+                }
+                return;
+            }
+
+            if (isUp) {
+                e.preventDefault();
+                upPressCount++;
+                if (upPressCount === 1) {
+                    clearTimeout(upPressTimer);
+                    upPressTimer = setTimeout(() => {
+                        handleShortUp();
+                        upPressCount = 0;
+                    }, DOUBLE_CLICK_DELAY);
+                } else if (upPressCount >= 2) {
+                    clearTimeout(upPressTimer);
+                    upPressCount = 0;
+                    handleBack();
+                }
+                return;
+            }
+
+            if (key === ' ' || key === 'Space') {
+                e.preventDefault();
+                if (state.isTimerRunning) {
+                    pauseTimer();
+                } else if (state.isClassOn && state.selectedStudents.length > 0) {
+                    startTimer();
+                }
+                return;
+            }
+
+            if (key === 'Escape') {
+                if (state.isTimerRunning) stopTimer();
+                if (state.isClassOn) {
+                    if (confirm('课堂正在进行，确定要返回首页吗？')) {
+                        window.location.href = 'home.html';
+                    }
+                } else {
+                    window.location.href = 'home.html';
+                }
+                e.preventDefault();
+                return;
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            const modeBtn = e.target.closest('.mode-group button');
+            if (modeBtn && currentStep === STEP_MODE) {
+                const btns = document.querySelectorAll('.mode-group button');
+                btns.forEach((b, i) => { if (b === modeBtn) selectedOptionIndex = i; });
+                highlightOption();
+            }
+            const memberBtn = e.target.closest('.member-btn');
+            if (memberBtn && currentStep === STEP_STUDENT) {
+                const btns = document.querySelectorAll('.member-btn:not(.disabled):not(.used):not(.safe-negative)');
+                btns.forEach((b, i) => { if (b === memberBtn) selectedOptionIndex = i; });
+                highlightOption();
+            }
+        });
+
+        function init() {
+            initClassroom();
+            initVoices();
+
+            document.querySelectorAll('.mode-group button').forEach(btn => {
+                btn.addEventListener('click', function() { switchMode(this.dataset.mode); });
+            });
+
+            document.getElementById('classBtn').addEventListener('click', toggleClass);
+            document.getElementById('startBtn').addEventListener('click', startTimer);
+            document.getElementById('pauseBtn').addEventListener('click', pauseTimer);
+            document.getElementById('stopBtn').addEventListener('click', stopTimer);
+            document.getElementById('scoreCancelBtn').addEventListener('click', function() {
+                closeScoreModal();
+                state.selectedStudents = [];
+                renderAll();
+                updateButtons();
+                document.getElementById('statusText').textContent = '⏹ 已取消评分';
+                if (state.isTimerRunning) stopTimer();
+                currentStep = STEP_MODE;
+                updateStepOptions();
+                highlightOption();
+                document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+            });
+            document.getElementById('scoreConfirmBtn').addEventListener('click', confirmScores);
+            document.getElementById('resetBtn').addEventListener('click', resetClassroom);
+
+            document.getElementById('classBadge').addEventListener('dblclick', function() {
+                const newSpeech = prompt('请输入上课语音播报内容：', state.classStartSpeech);
+                if (newSpeech !== null && newSpeech.trim() !== '') {
+                    state.classStartSpeech = newSpeech.trim();
+                    saveState();
+                }
+            });
+
+            updateButtons();
+            currentStep = STEP_MODE;
+            updateStepOptions();
+            highlightOption();
+            document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
+
+            setTimeout(() => {
+                showFloatToast('📡 翻页笔已适配：短按上下导航，双击↓确认，双击↑返回（400ms）');
+            }, 1500);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    })();
+</script>
+</body>
+</html>

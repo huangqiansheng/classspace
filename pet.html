@@ -1,0 +1,76 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>🐾 宠物乐园</title>
+    <link rel="stylesheet" href="pet.css">
+</head>
+<body>
+    <!-- 左侧速度滑块 -->
+    <div id="speedSliderContainer">
+        <span style="font-size:12px; color:#aaa; writing-mode:vertical-lr; letter-spacing:2px;">速度</span>
+        <input type="range" id="speedSlider" min="0.0" max="5.0" step="0.1" value="1.0">
+        <span id="speedLabel" style="font-size:14px; color:#ffd700; min-width:30px; text-align:center;">1.0</span>
+    </div>
+
+    <!-- 右侧体型滑块 -->
+    <div id="sizeSliderContainer">
+        <span style="font-size:12px; color:#aaa; writing-mode:vertical-lr; letter-spacing:2px;">体型</span>
+        <input type="range" id="sizeSlider" min="0.1" max="5.0" step="0.1" value="1.0">
+        <span id="sizeLabel" style="font-size:14px; color:#ffd700; min-width:30px; text-align:center;">1.0</span>
+    </div>
+
+    <div class="pet-app">
+        <div class="pet-toolbar">
+            <span class="pet-title">🐾 宠物乐园</span>
+            <span class="pet-count" id="petCount">0 只小可爱</span>
+            <!-- 模式切换按钮 -->
+            <button id="modeSwitchBtn" class="mode-switch-btn" style="background:rgba(46,204,113,0.3);border:2px solid #2ecc71;color:#fff;padding:4px 16px;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s;margin-left:8px;">🐍 贪吃蛇</button>
+            <a href="home.html" class="back-link" style="color: #6c5ce7; text-decoration: none; font-weight: 500; margin-left: 8px; display: inline-flex; align-items: center; justify-content: center;">
+    <img src="logo.svg" alt="logo" style="width:40px; height:40px;">
+</a>
+        </div>
+
+        <div class="pet-park" id="petPark">
+            <!-- 操场装饰 -->
+            <div class="track"></div>
+            <div class="football-field"></div>
+            <div class="flag-area">
+                <div class="flag-pole"></div>
+                <div class="flag-base"></div>
+            </div>
+            <div class="tree" style="top:3%; left:2%;">🌳</div>
+            <div class="tree" style="top:2%; right:2%;">🌲</div>
+            <div class="tree" style="bottom:2%; left:2%;">🌴</div>
+            <div class="tree" style="bottom:2%; right:2%;">🌳</div>
+            <div class="tree" style="top:40%; left:1%;">🌲</div>
+            <div class="tree" style="top:40%; right:1%;">🌴</div>
+            <div class="tree" style="top:15%; left:45%;">🌳</div>
+            <div class="tree" style="bottom:15%; right:45%;">🌲</div>
+            <div class="tree" style="top:60%; left:3%;">🌴</div>
+            <div class="tree" style="top:60%; right:3%;">🌳</div>
+        </div>
+    </div>
+
+    <!-- 斗蛐蛐面板：属性面板（左侧） -->
+    <div id="battleAttrPanel" class="battle-panel attr-panel" style="display:none;">
+        <div class="panel-title">📊 属性</div>
+        <div id="attrContent"><div class="no-selection">👆 点击宠物选中</div></div>
+    </div>
+
+    <!-- 斗蛐蛐面板：小组面板（右侧） -->
+    <div id="battleStatPanel" class="battle-panel stat-panel" style="display:none;">
+        <div class="panel-title">📊 小组</div>
+        <div id="groupStatsContent"><div style="color:#666;font-size:12px;text-align:center;padding:10px 0;">等待数据...</div></div>
+    </div>
+
+    <div class="fx-container" id="fxContainer"></div>
+    <div class="float-toast" id="floatToast"></div>
+
+    <script src="dataManager.js"></script>
+    <script src="pet.js"></script>
+</body>
+</html>

@@ -1,0 +1,2570 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权，详情请见项目根目录的 LICENSE 文件 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>班级空间</title>
+    <style>
+        /* ===== 全局重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #f4f7fb;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+
+        .app {
+            max-width: min(1100px, calc(100vw - 440px));
+            width: 100%;
+            background: white;
+            border-radius: 32px;
+            padding: 30px 35px 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+            position: relative;
+        }
+
+        /* ----- 左侧固定 QQ 群区域（宽度严格 176px） ----- */
+        .qq-sidebar {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 999;
+            width: 176px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 20px 18px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .qq-sidebar .qq-label {
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        .qq-sidebar .qq-number {
+            width: 100%;
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            font-family: 'Courier New', monospace;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+            word-break: break-all;
+            white-space: normal;
+            text-align: center;
+        }
+        .qq-sidebar .qq-number:hover {
+            background: #e9edf4;
+        }
+        .qq-sidebar .qq-qr {
+            width: 140px;
+            height: 140px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f1f5f9;
+            border: 1px solid #e9edf4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .qq-sidebar .qq-qr:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 12px rgba(0,0,0,0.08);
+        }
+        .qq-sidebar .qq-qr img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .qq-sidebar .qq-qr .upload-hint {
+            font-size: 13px;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.4;
+            padding: 6px;
+            pointer-events: none;
+        }
+        .qq-sidebar .copy-btn {
+            background: #6c5ce7;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            padding: 6px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+            width: 100%;
+        }
+        .qq-sidebar .copy-btn:hover {
+            background: #5a4bd1;
+            transform: scale(1.02);
+        }
+        .qq-sidebar .copy-btn.copied {
+            background: #27ae60;
+        }
+
+        /* ===== [新增] 问卷调查区域（与QQ群样式完全统一） ===== */
+        .qq-sidebar .divider {
+            width: 100%;
+            height: 1px;
+            background: #e9edf4;
+            margin: 6px 0 10px 0;
+            flex-shrink: 0;
+        }
+        .qq-sidebar .survey-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .qq-sidebar .survey-label {
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+        .qq-sidebar .survey-link {
+            width: 100%;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            font-family: 'Courier New', monospace;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            user-select: none;
+            word-break: break-all;
+            white-space: normal;
+            text-align: center;
+        }
+        .qq-sidebar .survey-link:hover {
+            background: #e9edf4;
+        }
+        .qq-sidebar .survey-qr {
+            width: 140px;
+            height: 140px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f1f5f9;
+            border: 1px solid #e9edf4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+        .qq-sidebar .survey-qr:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 12px rgba(0,0,0,0.08);
+        }
+        .qq-sidebar .survey-qr img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .qq-sidebar .survey-qr .upload-hint {
+            font-size: 13px;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.4;
+            padding: 6px;
+            pointer-events: none;
+        }
+        .qq-sidebar .copy-link-btn {
+            background: #6c5ce7;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            padding: 6px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+            width: 100%;
+        }
+        .qq-sidebar .copy-link-btn:hover {
+            background: #5a4bd1;
+            transform: scale(1.02);
+        }
+        .qq-sidebar .copy-link-btn.copied {
+            background: #27ae60;
+        }
+        .qq-sidebar .survey-upload-input {
+            display: none;
+        }
+
+        /* 图片放大弹窗 */
+        .image-preview-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .image-preview-overlay.active {
+            display: flex;
+        }
+        .image-preview-overlay img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 12px;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.3);
+            background: white;
+            padding: 8px;
+        }
+
+        /* 隐藏的文件上传 input */
+        #qqQrUpload {
+            display: none;
+        }
+
+        /* 响应式：小屏幕隐藏侧边栏 */
+        @media (max-width: 1300px) {
+            .qq-sidebar {
+                display: none;
+            }
+        }
+
+        /* 头部：标题 + 排序 */
+        .app-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            gap: 16px;
+        }
+
+        /* [修复] 标题行垂直对齐，确保 Logo 与文字在同一高度 */
+        .app-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .app-header h1 small {
+            font-size: 16px;
+            font-weight: 400;
+            color: #94a3b8;
+            margin-left: 12px;
+        }
+
+        .sort-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            padding: 4px 6px;
+            border-radius: 40px;
+        }
+        .sort-toolbar button {
+            background: transparent;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .sort-toolbar button.active {
+            background: white;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        .sort-toolbar button:hover:not(.active) {
+            background: #e2e8f0;
+        }
+
+        /* 班级列表 */
+        .class-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .class-item {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 20px 24px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            cursor: default;
+        }
+        .class-item:hover {
+            background: #f1f5f9;
+            border-color: #e2e8f0;
+        }
+
+        /* 新建班级条 */
+        .class-item-new {
+            border: 2px dashed #cbd5e1;
+            background: #fafcff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #6c5ce7;
+            transition: 0.2s;
+        }
+        .class-item-new:hover {
+            background: #f1f5f9;
+            border-color: #6c5ce7;
+            transform: scale(1.01);
+        }
+        .class-item-new .icon {
+            font-size: 28px;
+            margin-right: 12px;
+        }
+
+        .class-info-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 24px;
+            margin-bottom: 14px;
+        }
+
+        .class-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            cursor: text;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+        .class-name:hover {
+            background: #e9edf4;
+        }
+
+        .class-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+            font-size: 15px;
+            color: #334155;
+        }
+        .class-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .class-meta .label {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        .class-meta .value {
+            font-weight: 500;
+            color: #0f172a;
+        }
+        .class-meta .editable {
+            cursor: pointer;
+            border-bottom: 1px dashed #cbd5e1;
+            padding: 0 4px;
+        }
+        .class-meta .editable:hover {
+            background: #e2e8f0;
+            border-color: #6c5ce7;
+        }
+
+        .class-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+        }
+        .class-actions button {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 18px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.15s;
+            line-height: 1;
+        }
+        .class-actions button:hover {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .class-actions .btn-del:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        /* 模块标签 */
+        .module-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .module-tag {
+            background: white;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: 0.15s;
+        }
+        .module-tag:hover {
+            border-color: #6c5ce7;
+            background: #f8f6ff;
+        }
+        .module-tag .icon {
+            font-size: 16px;
+        }
+        .module-tag .del-mod {
+            margin-left: 4px;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.15s;
+        }
+        .module-tag .del-mod:hover {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 32px;
+            padding: 32px 40px;
+            max-width: 520px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.2);
+            animation: modalFade 0.2s ease-out;
+        }
+        @keyframes modalFade {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-box h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 20px;
+        }
+        .modal-box .sub {
+            font-size: 15px;
+            color: #64748b;
+            margin-bottom: 18px;
+        }
+        .modal-box .form-group {
+            margin-bottom: 16px;
+        }
+        .modal-box .form-group label {
+            display: block;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .modal-box .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d9e6;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+            transition: 0.15s;
+        }
+        .modal-box .form-group input:focus {
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+        }
+        .modal-box .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .module-check-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .module-check-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 12px;
+            border-radius: 14px;
+            background: #f8fafc;
+            transition: 0.15s;
+            cursor: pointer;
+        }
+        .module-check-item:hover {
+            background: #f1f5f9;
+        }
+        .module-check-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #6c5ce7;
+            cursor: pointer;
+        }
+        .module-check-item label {
+            font-size: 17px;
+            font-weight: 500;
+            color: #1e293b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        .module-check-item .icon {
+            font-size: 22px;
+        }
+        .module-check-item .mod-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .module-check-item .mod-actions button {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: 0.15s;
+        }
+        .module-check-item .mod-actions button:hover {
+            background: #e2e8f0;
+        }
+        .module-check-item .mod-actions .del-mod-btn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .modal-actions button {
+            padding: 10px 28px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-actions .btn-confirm {
+            background: #6c5ce7;
+            color: white;
+        }
+        .modal-actions .btn-confirm:hover {
+            background: #5a4bd1;
+        }
+        .modal-actions .btn-cancel {
+            background: #e9edf4;
+            color: #475569;
+        }
+        .modal-actions .btn-cancel:hover {
+            background: #dce1ea;
+        }
+
+        .btn-add-module-global {
+            background: #f1f5f9;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.15s;
+            margin-top: 8px;
+        }
+        .btn-add-module-global:hover {
+            background: #e2e8f0;
+        }
+
+        /* ===== [新增] 右侧教学工具导航 ===== */
+        .tools-sidebar {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 999;
+            width: 176px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 20px 18px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .tools-sidebar .tools-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .tools-sidebar .tools-list::-webkit-scrollbar {
+            width: 2px;
+        }
+        .tools-sidebar .tools-list::-webkit-scrollbar-thumb {
+            background: #d1d9e6;
+            border-radius: 10px;
+        }
+
+        /* 统一分隔线样式 */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 2px 0 4px 0;
+            width: 100%;
+            cursor: default;
+            user-select: none;
+            pointer-events: none;
+            border: none;
+            background: transparent;
+        }
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #d1d9e6;
+        }
+        .section-divider span {
+            padding: 0 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+        }
+        .section-divider:first-of-type {
+            padding-top: 0;
+        }
+
+        /* 链接卡片 */
+        .tool-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 5px 8px 5px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            border: 1px solid #e9edf4;
+            cursor: grab;
+            transition: 0.12s;
+            font-size: 12px;
+            color: #1e293b;
+            user-select: none;
+        }
+        .tool-item:hover {
+            background: #f1f5f9;
+            border-color: #6c5ce7;
+        }
+        .tool-item .tool-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            color: #1e293b;
+            font-weight: 500;
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .tool-item .tool-name:hover {
+            color: #6c5ce7;
+        }
+        .tool-item.is-placeholder .tool-name {
+            color: #94a3b8;
+            font-style: italic;
+        }
+        .tool-item .tool-del {
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0 2px;
+            transition: 0.15s;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .tool-item .tool-del:hover {
+            color: #ef4444;
+            background: #fee2e2;
+            border-radius: 4px;
+        }
+        .tool-item.dragging {
+            opacity: 0.3;
+            border-color: #6c5ce7;
+        }
+        .tool-item.drag-over {
+            border-color: #6c5ce7;
+            background: #e9edf4;
+        }
+
+        .tools-add-bar {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 2px;
+        }
+        .tools-add-bar input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #d1d9e6;
+            border-radius: 6px;
+            font-size: 12px;
+            outline: none;
+            background: #fafcff;
+            transition: 0.15s;
+        }
+        .tools-add-bar input:focus {
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.08);
+        }
+        .tools-add-bar .btn-row {
+            display: flex;
+            gap: 4px;
+        }
+        .tools-add-bar .btn {
+            flex: 1;
+            padding: 4px 0;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            text-align: center;
+        }
+        .tools-add-bar .btn-primary {
+            background: #6c5ce7;
+            color: #fff;
+        }
+        .tools-add-bar .btn-primary:hover {
+            background: #5a4bd1;
+        }
+        .tools-add-bar .btn-outline {
+            background: transparent;
+            border: 1px solid #d1d9e6;
+            color: #475569;
+        }
+        .tools-add-bar .btn-outline:hover {
+            background: #f1f5f9;
+        }
+
+        .tools-footer-hint {
+            font-size: 11px;
+            color: #b0c0d0;
+            text-align: center;
+            margin-top: 2px;
+            line-height: 1.5;
+        }
+        .tools-footer-hint span {
+            display: inline-block;
+            background: #f1f5f9;
+            padding: 0 6px;
+            border-radius: 4px;
+            color: #6c5ce7;
+        }
+
+        @media (max-width: 1300px) {
+            .tools-sidebar {
+                display: none;
+            }
+        }
+
+        /* 响应式 */
+        @media (max-width: 700px) {
+            .app { padding: 20px 16px; }
+            .class-info-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .class-actions { margin-left: 0; width: 100%; justify-content: flex-end; }
+            .class-meta { font-size: 14px; }
+            .modal-box { padding: 24px 20px; }
+            .modal-box .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== 左侧固定 QQ 群 ===== -->
+<div class="qq-sidebar" id="qqSidebar">
+    <span class="qq-label">💬 QQ群</span>
+    <span class="qq-number" id="qqNumberDisplay" title="下方按钮复制">732661764</span>
+    <div class="qq-qr" id="qqQrContainer">
+        <img id="qqQrImage" style="display:none;" alt="QQ群二维码" />
+        <span class="upload-hint" id="uploadHint">单击放大 · 三击上传</span>
+    </div>
+    <input type="file" id="qqQrUpload" accept="image/*" />
+    <button class="copy-btn" id="copyQqBtn">📋 复制群号</button>
+
+    <!-- ===== [新增] 分隔线 ===== -->
+    <div class="divider"></div>
+
+    <!-- ===== [新增] 问卷调查区域 ===== -->
+    <div class="survey-section">
+        <span class="survey-label">📋 教师问卷</span>
+        <span class="survey-link" id="surveyLinkDisplay" title="下方按钮复制">https://v.wjx.cn/vm/rxA9ZYe.aspx</span>
+        <div class="survey-qr" id="surveyQrContainer">
+            <img id="surveyQrImage" style="display:none;" alt="问卷二维码" />
+            <span class="upload-hint" id="surveyUploadHint">单击放大 · 三击上传</span>
+        </div>
+        <input type="file" id="surveyQrUpload" class="survey-upload-input" accept="image/*" />
+        <button class="copy-link-btn" id="copySurveyLinkBtn">📋 复制链接</button>
+    </div>
+</div>
+
+<!-- ===== [新增] 右侧教学工具导航 ===== -->
+<div class="tools-sidebar" id="toolsSidebar">
+    <div class="tools-list" id="toolsList"><div class="empty-tip" style="color:#94a3b8;text-align:center;font-size:12px;padding:12px 0;">加载中...</div></div>
+
+    <div class="section-divider">
+        <span>新 增</span>
+    </div>
+
+    <div class="tools-add-bar">
+        <input type="text" id="toolNameInput" placeholder="名称" />
+        <input type="text" id="toolUrlInput" placeholder="网址" />
+        <div class="btn-row">
+            <button class="btn btn-primary" id="addToolBtn">添加</button>
+            <button class="btn btn-outline" id="resetToolsBtn">重置</button>
+        </div>
+    </div>
+    <div class="tools-footer-hint"><span>单击</span>跳转 · <span>双击</span>编辑 · 拖拽排序</div>
+</div>
+
+<!-- 图片放大预览 -->
+<div class="image-preview-overlay" id="imagePreviewOverlay">
+    <img id="previewImage" src="" alt="二维码放大预览" />
+</div>
+
+<!-- ===== 主内容 ===== -->
+<div class="app">
+    <!-- 头部 -->
+    <div class="app-header">
+        <h1>
+            <span id="toggleSidebarBtn" style="display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                <img src="logo.svg" alt="logo" style="width:48px; height:48px; vertical-align: middle; margin-right: 8px;">
+            </span>
+            班级空间
+        </h1>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button id="installBtn" style="display:none; background:#6c5ce7; color:#fff; border:none; padding:8px 18px; border-radius:30px; font-size:14px; font-weight:600; cursor:pointer; box-shadow:0 4px 12px rgba(108,92,231,0.3); transition:0.2s; font-family:inherit;" onmouseover="this.style.background='#5a4bd1'" onmouseout="this.style.background='#6c5ce7'">
+                📲 安装到桌面
+            </button>
+            <div class="sort-toolbar" id="sortToolbar">
+                <button class="active" data-sort="time">⏱️ 时间</button>
+                <button data-sort="alpha">🔤 字母</button>
+                <button data-sort="grade">📚 年级</button>
+            </div>
+        </div>
+
+    <!-- 班级列表 -->
+    <div class="class-list" id="classList"></div>
+</div>
+
+<!-- ===== 模态框：新建/编辑班级基本信息 ===== -->
+<div class="modal-overlay" id="infoModal">
+    <div class="modal-box">
+        <h2 id="infoModalTitle">新建班级</h2>
+        <div class="form-group">
+            <label>班级名称 *</label>
+            <input type="text" id="infoName" placeholder="如：一班" />
+        </div>
+        <div class="form-group">
+            <label>学校</label>
+            <input type="text" id="infoSchool" placeholder="学校名称" />
+        </div>
+        <div class="form-group">
+            <label>年级</label>
+            <select id="infoGrade">
+                <option value="">请选择年级</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>小组数</label>
+                <input type="number" id="infoGroupCount" placeholder="0" min="0" />
+            </div>
+            <div class="form-group">
+                <label>班级人数</label>
+                <input type="number" id="infoStudentCount" placeholder="0" min="0" />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>男生人数</label>
+                <input type="number" id="infoMaleCount" placeholder="0" min="0" />
+            </div>
+            <div class="form-group">
+                <label>女生人数</label>
+                <input type="number" id="infoFemaleCount" placeholder="0" min="0" />
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="infoCancel">取消</button>
+            <button class="btn-confirm" id="infoConfirm">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 模态框：管理功能模块 ===== -->
+<div class="modal-overlay" id="moduleModal">
+    <div class="modal-box">
+        <h2 id="moduleModalTitle">管理功能模块</h2>
+        <div class="sub" id="moduleModalSub">为班级「<span id="moduleClassName"></span>」选择启用的功能</div>
+        <div class="module-check-list" id="moduleCheckList"></div>
+        <!-- 纯白按钮：视觉隐藏但功能保留 -->
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+            <button class="btn-add-module-global" id="btnAddModuleGlobal" style="background:white; color:white; border:1px solid white; cursor:pointer; padding:8px 20px; border-radius:30px;">
+                 新增全局模块
+            </button>
+            <span style="font-size:13px;color:white;align-self:center;">（新增后所有班级可选）</span>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-cancel" id="moduleCancel">取消</button>
+            <button class="btn-confirm" id="moduleConfirm">保存</button>
+        </div>
+    </div>
+</div>
+
+<script src="dataManager.js"></script>
+<script>
+    // ================================================================
+    //  原有 home.html 全部脚本（原样保留）
+    // ================================================================
+
+    const MODULES_STORAGE_KEY = 'homepage_available_modules';
+    const CLASSES_STORAGE_KEY = 'homepage_classes_data';
+    const SORT_KEY = 'homepage_sort_mode';
+    const QR_IMAGE_KEY = 'homepage_qq_qr_image';
+
+    // ===== 年级选项（从幼儿园到九年级） =====
+    const GRADE_OPTIONS = [
+        { label: '小班', value: '小班', sortOrder: 1 },
+        { label: '中班', value: '中班', sortOrder: 2 },
+        { label: '大班', value: '大班', sortOrder: 3 },
+        { label: '一年级', value: '一年级', sortOrder: 4 },
+        { label: '二年级', value: '二年级', sortOrder: 5 },
+        { label: '三年级', value: '三年级', sortOrder: 6 },
+        { label: '四年级', value: '四年级', sortOrder: 7 },
+        { label: '五年级', value: '五年级', sortOrder: 8 },
+        { label: '六年级', value: '六年级', sortOrder: 9 },
+        { label: '七年级', value: '七年级', sortOrder: 10 },
+        { label: '八年级', value: '八年级', sortOrder: 11 },
+        { label: '九年级', value: '九年级', sortOrder: 12 }
+    ];
+
+    // 年级排序值映射（用于快速查找）
+    const GRADE_SORT_ORDER = {};
+    GRADE_OPTIONS.forEach(g => { GRADE_SORT_ORDER[g.value] = g.sortOrder; });
+
+    // ===== 默认模块（完整 1 个） =====
+    const DEFAULT_MODULES = [
+    { key: 'seat', label: '座次表', icon: '🪑', url: 'seat.html' },
+    { key: 'pet', label: '宠物', icon: '🐾', url: 'pet.html' },
+    { key: 'convention', label: '班级公约', icon: '📜', url: 'convention.html' },
+    { key: 'statistics', label: '数据分析', icon: '📊', url: 'statistics.html' },
+    { key: 'random', label: '随机工具', icon: '🎲', url: 'random.html' },
+    { key: 'competition', label: '竞技课堂', icon: '⚔️', url: 'classroom-competition.html' },
+    { key: 'fitness', label: '体测数据', icon: '🏃', url: 'fitness.html' },
+    { key: 'schedule', label: '周课程表', icon: '📅', url: 'schedule.html' },
+    { key: 'ai', label: 'AI助手', icon: '🤖', url: 'ai.html' },
+    { key: 'shop', label: '兑换商店', icon: '🏪', url: 'shop.html' }
+];
+    // 所有模块的 key 列表
+    const ALL_MODULE_KEYS = DEFAULT_MODULES.map(m => m.key);
+
+    function loadModules() {
+        const raw = localStorage.getItem(MODULES_STORAGE_KEY);
+        if (raw) {
+            try {
+                const parsed = JSON.parse(raw);
+                // 检查是否包含所有默认模块，若缺少则补全（仅补全局列表，不涉及班级）
+                let needSave = false;
+                DEFAULT_MODULES.forEach(dm => {
+                    if (!parsed.some(m => m.key === dm.key)) {
+                        parsed.push(dm);
+                        needSave = true;
+                    }
+                });
+                if (needSave) {
+                    saveModules(parsed);
+                }
+                return parsed;
+            } catch (e) {}
+        }
+        saveModules(DEFAULT_MODULES);
+        return DEFAULT_MODULES;
+    }
+
+    function saveModules(modules) {
+        localStorage.setItem(MODULES_STORAGE_KEY, JSON.stringify(modules));
+    }
+
+    let availableModules = loadModules();
+
+    // ===== 加载班级数据 =====
+    function loadClasses() {
+        const raw = localStorage.getItem(CLASSES_STORAGE_KEY);
+        if (raw) {
+            try {
+                const data = JSON.parse(raw);
+                if (data && data.classes && data.classes.length > 0) {
+                    // 兼容旧数据：为没有 grade 字段的班级补上默认值
+                    data.classes.forEach(cls => {
+                        if (!cls.grade) cls.grade = '';
+                    });
+                    return data;
+                }
+            } catch (e) {}
+        }
+        // 首次使用时创建默认数据：只有一个“示范班”
+        const defaultData = {
+            classes: [{
+                id: 'cls_demo_' + Date.now(),
+                name: '示范班',
+                school: '',
+                grade: '',
+                studentCount: 0,
+                groupCount: 0,
+                maleCount: 0,
+                femaleCount: 0,
+                modules: [...ALL_MODULE_KEYS],
+                createdAt: Date.now()
+            }]
+        };
+        saveClasses(defaultData);
+        return defaultData;
+    }
+
+    function saveClasses(data) {
+        localStorage.setItem(CLASSES_STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function getSortMode() {
+        return localStorage.getItem(SORT_KEY) || 'time';
+    }
+
+    function setSortMode(mode) {
+        localStorage.setItem(SORT_KEY, mode);
+    }
+
+    let classesData = loadClasses();
+    let currentSort = getSortMode();
+
+    // ================================================================
+    //  辅助函数
+    // ================================================================
+
+    function getModuleLabel(key) {
+        const found = availableModules.find(m => m.key === key);
+        return found ? found.label : key;
+    }
+
+    function getModuleIcon(key) {
+        const found = availableModules.find(m => m.key === key);
+        return found ? found.icon : '📎';
+    }
+
+    function getModuleUrl(key) {
+        const found = availableModules.find(m => m.key === key);
+        return found ? found.url : '#';
+    }
+
+    // ===== 年级排序函数 =====
+    function getGradeSortOrder(grade) {
+        return GRADE_SORT_ORDER[grade] || 999; // 未知年级排最后
+    }
+
+    function sortClasses(classes, mode) {
+        const list = [...classes];
+        if (mode === 'alpha') {
+            list.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
+        } else if (mode === 'grade') {
+            list.sort((a, b) => {
+                const orderA = getGradeSortOrder(a.grade || '');
+                const orderB = getGradeSortOrder(b.grade || '');
+                // 未知年级排最后
+                if (orderA === 999 && orderB !== 999) return 1;
+                if (orderB === 999 && orderA !== 999) return -1;
+                // 高年级在前
+                return orderB - orderA;
+            });
+        } else { // time
+            list.sort((a, b) => b.createdAt - a.createdAt);
+        }
+        return list;
+    }
+
+    function getNextModuleKey() {
+        const existing = availableModules.map(m => m.key);
+        let i = 1;
+        while (existing.includes('mod' + i)) i++;
+        return 'mod' + i;
+    }
+
+    // ================================================================
+    //  QQ 二维码上传与显示
+    // ================================================================
+
+    function loadQrImage() {
+        // ★ 固定路径：根目录下的二维码图片（中文文件名）
+        const FIXED_QR_PATH = 'qq_group.jpg';
+
+        const img = document.getElementById('qqQrImage');
+        img.src = FIXED_QR_PATH;
+        img.onload = function() {
+            // 图片加载成功，显示
+            img.style.display = 'block';
+            document.getElementById('uploadHint').style.display = 'none';
+        };
+        img.onerror = function() {
+            // 图片不存在，静默隐藏（无任何提示）
+            img.style.display = 'none';
+            document.getElementById('uploadHint').style.display = 'block';
+        };
+
+        // 检查 localStorage 是否有备用图片（可选）
+        try {
+            const data = localStorage.getItem(QR_IMAGE_KEY);
+            if (data) {
+                // 如果固定图片加载失败，但 localStorage 有数据，可以备用
+                // 但这里保持静默，不做额外处理
+            }
+        } catch(e) {}
+    }
+
+    // ================================================================
+    //  渲染班级列表
+    // ================================================================
+
+    function render() {
+        classesData.classes.forEach(cls => {
+            if (!cls.id) {
+                cls.id = 'cls_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            }
+        });
+        saveClasses(classesData);
+        const container = document.getElementById('classList');
+        container.innerHTML = '';
+
+        // 新建班级条
+        const newItem = document.createElement('div');
+        newItem.className = 'class-item class-item-new';
+        newItem.innerHTML = `<span class="icon">➕</span> 新建班级`;
+        newItem.addEventListener('click', function() { openInfoModal(null); });
+        container.appendChild(newItem);
+
+        const sorted = sortClasses(classesData.classes, currentSort);
+
+        sorted.forEach((cls, idx) => {
+            const originalIndex = classesData.classes.indexOf(cls);
+
+            // 读取座次表实际数据
+            const classDataKey = 'classroomData_' + cls.id;
+            const rawData = localStorage.getItem(classDataKey);
+            let actualCount = 0;
+            let actualGroupCount = 0;
+            let actualMaleCount = 0;
+            let actualFemaleCount = 0;
+            if (rawData) {
+                try {
+                    const parsed = JSON.parse(rawData);
+                    if (parsed.students) {
+                        const activeStudents = parsed.students.filter(s => !s.onLeave);
+                        actualCount = activeStudents.length;
+                        // 只统计非“未分组”的小组
+                        const groupNames = new Set(activeStudents.map(s => s.groupName).filter(g => g && g !== '未分组'));
+                        actualGroupCount = groupNames.size;
+                        // ★ 统计男女
+                        actualMaleCount = activeStudents.filter(s => s.gender === '男').length;
+                        actualFemaleCount = activeStudents.filter(s => s.gender === '女').length;
+                    }
+                } catch(e) {}
+            }
+
+            // 显示占位符：如果数据为 0 或空，显示 '-'
+            const countDisplay = actualCount > 0 ? actualCount : '-';
+            const groupDisplay = actualGroupCount > 0 ? actualGroupCount : '-';
+            const schoolDisplay = cls.school && cls.school.trim() !== '' ? cls.school : '-';
+            const gradeDisplay = cls.grade && cls.grade.trim() !== '' ? cls.grade : '-';
+            const maleDisplay = actualMaleCount > 0 ? actualMaleCount : '-';
+            const femaleDisplay = actualFemaleCount > 0 ? actualFemaleCount : '-';
+
+            const item = document.createElement('div');
+            item.className = 'class-item';
+
+            // 上行：基本信息
+            const infoRow = document.createElement('div');
+            infoRow.className = 'class-info-row';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'class-name';
+            nameSpan.textContent = cls.name;
+            nameSpan.title = '双击编辑基本信息';
+            nameSpan.addEventListener('dblclick', function(e) {
+                e.stopPropagation();
+                openInfoModal(originalIndex);
+            });
+
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'class-meta';
+            // 顺序：学校 · 年级 · 小组 · 人数 · 男生 · 女生 · 创建时间
+            metaDiv.innerHTML = `
+                <span><span class="label">学校</span> <span class="value editable" data-field="school">${schoolDisplay}</span></span>
+                <span><span class="label">年级</span> <span class="value editable" data-field="grade">${gradeDisplay}</span></span>
+                <span><span class="label">小组</span> <span class="value editable" data-field="groupCount">${groupDisplay}</span></span>
+                <span><span class="label">人数</span> <span class="value editable" data-field="studentCount">${countDisplay}</span></span>
+                <span><span class="label">男生</span> <span class="value editable" data-field="maleCount">${maleDisplay}</span></span>
+                <span><span class="label">女生</span> <span class="value editable" data-field="femaleCount">${femaleDisplay}</span></span>
+                <span><span class="label">创建</span> <span class="value">${new Date(cls.createdAt).toLocaleDateString()}</span></span>
+            `;
+            metaDiv.querySelectorAll('.editable').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    openInfoModal(originalIndex);
+                });
+            });
+
+            // 操作按钮
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'class-actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = '✏️';
+            editBtn.title = '编辑班级信息';
+            editBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openInfoModal(originalIndex);
+            });
+
+            // 齿轮 → 打开模块管理
+            const settingsBtn = document.createElement('button');
+            settingsBtn.textContent = '⚙️';
+            settingsBtn.title = '管理功能模块';
+            settingsBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openModuleManager(originalIndex);
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '🗑️';
+            delBtn.className = 'btn-del';
+            delBtn.title = '删除此班级';
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (classesData.classes.length <= 1) {
+                    alert('至少保留一个班级。');
+                    return;
+                }
+                if (confirm(`确定要删除班级“${cls.name}”吗？`)) {
+                    classesData.classes.splice(originalIndex, 1);
+                    saveClasses(classesData);
+                    render();
+                }
+            });
+
+            actionsDiv.appendChild(editBtn);
+            actionsDiv.appendChild(settingsBtn);
+            actionsDiv.appendChild(delBtn);
+
+            infoRow.appendChild(nameSpan);
+            infoRow.appendChild(metaDiv);
+            infoRow.appendChild(actionsDiv);
+
+            // 下行：模块标签（仅显示用户已勾选的模块）
+            const tagsDiv = document.createElement('div');
+            tagsDiv.className = 'module-tags';
+
+            cls.modules.forEach(modKey => {
+                // 如果全局模块列表中已不存在该模块，则自动清理
+                if (!availableModules.some(m => m.key === modKey)) {
+                    cls.modules = cls.modules.filter(m => m !== modKey);
+                    saveClasses(classesData);
+                    return;
+                }
+                const url = getModuleUrl(modKey);
+                const tag = document.createElement('a');
+                tag.className = 'module-tag';
+                tag.href = (url && url !== '#') ? url + '?classId=' + encodeURIComponent(cls.id) : '#';
+                tag.target = '_blank';
+                tag.innerHTML = `<span class="icon">${getModuleIcon(modKey)}</span> ${getModuleLabel(modKey)}`;
+                const delMod = document.createElement('span');
+                delMod.className = 'del-mod';
+                delMod.textContent = '✕';
+                delMod.title = '移除此模块';
+                delMod.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (confirm(`从“${cls.name}”中移除“${getModuleLabel(modKey)}”模块？`)) {
+                        cls.modules = cls.modules.filter(m => m !== modKey);
+                        saveClasses(classesData);
+                        render();
+                    }
+                });
+                tag.appendChild(delMod);
+                tagsDiv.appendChild(tag);
+            });
+
+            item.appendChild(infoRow);
+            item.appendChild(tagsDiv);
+
+            item.addEventListener('dblclick', function(e) {
+                if (e.target.closest('button') || e.target.closest('.editable') || e.target.closest('.class-name')) return;
+                openModuleManager(originalIndex);
+            });
+
+            container.appendChild(item);
+        });
+
+        document.querySelectorAll('.sort-toolbar button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.sort === currentSort);
+        });
+    }
+
+    // ================================================================
+    //  模态框：新建/编辑班级
+    // ================================================================
+
+    // 填充年级下拉框
+    function populateGradeSelect(select, selectedValue) {
+        select.innerHTML = '<option value="">请选择年级</option>';
+        GRADE_OPTIONS.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.value;
+            opt.textContent = g.label;
+            if (g.value === selectedValue) opt.selected = true;
+            select.appendChild(opt);
+        });
+    }
+
+    let editingIndex = null;
+
+    function openInfoModal(index) {
+        if (index === undefined || index === null) {
+            editingIndex = null;
+            document.getElementById('infoModalTitle').textContent = '新建班级';
+            document.getElementById('infoName').value = '';
+            document.getElementById('infoSchool').value = '';
+            document.getElementById('infoGroupCount').value = '';
+            document.getElementById('infoStudentCount').value = '';
+            document.getElementById('infoMaleCount').value = '';
+            document.getElementById('infoFemaleCount').value = '';
+            // 年级下拉框：默认选中空
+            populateGradeSelect(document.getElementById('infoGrade'), '');
+        } else {
+            editingIndex = index;
+            const cls = classesData.classes[index];
+            if (!cls) return;
+            document.getElementById('infoModalTitle').textContent = '编辑班级信息';
+            document.getElementById('infoName').value = cls.name || '';
+            document.getElementById('infoSchool').value = cls.school || '';
+            document.getElementById('infoGroupCount').value = cls.groupCount ?? '';
+            document.getElementById('infoStudentCount').value = cls.studentCount ?? '';
+            document.getElementById('infoMaleCount').value = cls.maleCount ?? '';
+            document.getElementById('infoFemaleCount').value = cls.femaleCount ?? '';
+            populateGradeSelect(document.getElementById('infoGrade'), cls.grade || '');
+        }
+        document.getElementById('infoModal').classList.add('active');
+        setTimeout(() => document.getElementById('infoName').focus(), 100);
+    }
+
+    function closeInfoModal() {
+        document.getElementById('infoModal').classList.remove('active');
+    }
+
+    function saveInfo() {
+        const name = document.getElementById('infoName').value.trim();
+        if (!name) { alert('班级名称不能为空。'); return; }
+        const exist = classesData.classes.find((c, i) => c.name === name && i !== editingIndex);
+        if (exist) { alert('该班级名称已存在，请更换。'); return; }
+
+        const school = document.getElementById('infoSchool').value.trim();
+        const grade = document.getElementById('infoGrade').value;
+        const studentCount = parseInt(document.getElementById('infoStudentCount').value) || 0;
+        const groupCount = parseInt(document.getElementById('infoGroupCount').value) || 0;
+        const maleCount = parseInt(document.getElementById('infoMaleCount').value) || 0;
+        const femaleCount = parseInt(document.getElementById('infoFemaleCount').value) || 0;
+
+        if (editingIndex === null) {
+            const newClass = {
+                id: 'cls_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name,
+                school,
+                grade,
+                studentCount,
+                groupCount,
+                maleCount,
+                femaleCount,
+                modules: ['seat', 'schedule'],
+                createdAt: Date.now()
+            };
+            classesData.classes.push(newClass);
+        } else {
+            const cls = classesData.classes[editingIndex];
+            cls.name = name;
+            cls.school = school;
+            cls.grade = grade;
+            cls.studentCount = studentCount;
+            cls.groupCount = groupCount;
+            cls.maleCount = maleCount;
+            cls.femaleCount = femaleCount;
+        }
+        saveClasses(classesData);
+        closeInfoModal();
+        render();
+    }
+
+    document.getElementById('infoConfirm').addEventListener('click', saveInfo);
+    document.getElementById('infoCancel').addEventListener('click', closeInfoModal);
+    document.getElementById('infoModal').addEventListener('click', function(e) {
+        if (e.target === this) closeInfoModal();
+    });
+    document.querySelectorAll('#infoModal input').forEach(inp => {
+        inp.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') saveInfo();
+        });
+    });
+
+    // ================================================================
+    //  模态框：管理功能模块
+    // ================================================================
+
+    let moduleEditIndex = -1;
+
+    function openModuleManager(index) {
+        moduleEditIndex = index;
+        const cls = classesData.classes[index];
+        if (!cls) return;
+
+        document.getElementById('moduleModalTitle').textContent = `管理「${cls.name}」的功能`;
+        document.getElementById('moduleClassName').textContent = cls.name;
+
+        const list = document.getElementById('moduleCheckList');
+        list.innerHTML = '';
+
+        // 显示所有可用模块（即全局池中的所有模块）
+        availableModules.forEach(mod => {
+            const checked = cls.modules.includes(mod.key);
+            const div = document.createElement('div');
+            div.className = 'module-check-item';
+            div.innerHTML = `
+                <input type="checkbox" id="mod_${mod.key}" value="${mod.key}" ${checked ? 'checked' : ''}>
+                <label for="mod_${mod.key}">
+                    <span class="icon">${mod.icon}</span> ${mod.label}
+                    <span style="font-size:12px;color:#94a3b8;margin-left:6px;">${mod.url || '无链接'}</span>
+                </label>
+                <div class="mod-actions">
+                    <button class="edit-mod-btn" data-key="${mod.key}" title="编辑模块">✏️</button>
+                    <button class="del-mod-btn" data-key="${mod.key}" title="删除模块（全局）">🗑️</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+
+        list.querySelectorAll('.edit-mod-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const key = this.dataset.key;
+                const mod = availableModules.find(m => m.key === key);
+                if (!mod) return;
+                const newLabel = prompt('修改模块名称：', mod.label);
+                if (newLabel !== null && newLabel.trim() !== '') mod.label = newLabel.trim();
+                const newUrl = prompt('修改模块链接（页面文件名）：', mod.url);
+                if (newUrl !== null) mod.url = newUrl.trim();
+                const newIcon = prompt('修改模块图标（一个emoji）：', mod.icon);
+                if (newIcon !== null && newIcon.trim() !== '') mod.icon = newIcon.trim();
+                saveModules(availableModules);
+                openModuleManager(moduleEditIndex);
+                render();
+            });
+        });
+
+        list.querySelectorAll('.del-mod-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const key = this.dataset.key;
+                if (!confirm(`确定要删除模块“${getModuleLabel(key)}”吗？\n（该操作将同时从所有班级中移除该模块）`)) return;
+                availableModules = availableModules.filter(m => m.key !== key);
+                saveModules(availableModules);
+                classesData.classes.forEach(cls => {
+                    cls.modules = cls.modules.filter(m => m !== key);
+                });
+                saveClasses(classesData);
+                openModuleManager(moduleEditIndex);
+                render();
+            });
+        });
+
+        document.getElementById('moduleModal').classList.add('active');
+    }
+
+    function closeModuleModal() {
+        document.getElementById('moduleModal').classList.remove('active');
+    }
+
+    function saveModuleSelection() {
+        if (moduleEditIndex === -1) return;
+        const cls = classesData.classes[moduleEditIndex];
+        if (!cls) return;
+
+        const checkboxes = document.querySelectorAll('#moduleCheckList input[type="checkbox"]');
+        const selected = [];
+        checkboxes.forEach(cb => {
+            if (cb.checked) selected.push(cb.value);
+        });
+        cls.modules = selected;
+        saveClasses(classesData);
+        closeModuleModal();
+        render();
+    }
+
+    document.getElementById('moduleConfirm').addEventListener('click', saveModuleSelection);
+    document.getElementById('moduleCancel').addEventListener('click', closeModuleModal);
+    document.getElementById('moduleModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModuleModal();
+    });
+
+    // ===== 新增全局模块（纯白按钮依旧可用） =====
+    document.getElementById('btnAddModuleGlobal').addEventListener('click', function() {
+        const label = prompt('请输入新模块名称：');
+        if (!label || label.trim() === '') return;
+        const key = getNextModuleKey();
+        const url = prompt('请输入模块链接（页面文件名，如 newpage.html）：', 'newpage.html');
+        const icon = prompt('请输入模块图标（一个emoji）：', '📌');
+        const newMod = {
+            key,
+            label: label.trim(),
+            icon: icon || '📌',
+            url: url.trim() || '#'
+        };
+        availableModules.push(newMod);
+        saveModules(availableModules);
+
+        if (confirm(`是否自动为所有班级启用“${label.trim()}”模块？`)) {
+            classesData.classes.forEach(cls => {
+                if (!cls.modules.includes(key)) {
+                    cls.modules.push(key);
+                }
+            });
+            saveClasses(classesData);
+        }
+        // 重新打开当前班级的模块管理窗口，刷新列表
+        openModuleManager(moduleEditIndex);
+        render();
+        alert('✅ 模块已添加！');
+    });
+
+    // ================================================================
+    //  排序切换
+    // ================================================================
+
+    document.querySelectorAll('.sort-toolbar button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const sort = this.dataset.sort;
+            if (sort === currentSort) return;
+            currentSort = sort;
+            setSortMode(sort);
+            render();
+        });
+    });
+
+    // ================================================================
+    //  QQ 群功能：复制 + 三击群号上传二维码
+    // ================================================================
+
+    // 复制群号
+    document.getElementById('copyQqBtn').addEventListener('click', function() {
+        const qqNumber = '732661764';
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(qqNumber).then(() => {
+                this.textContent = '✅ 已复制';
+                this.classList.add('copied');
+                setTimeout(() => {
+                    this.textContent = '📋 复制群号';
+                    this.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                copyFallback(qqNumber);
+            });
+        } else {
+            copyFallback(qqNumber);
+        }
+    });
+
+    function copyFallback(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            alert('群号已复制！');
+        } catch (e) {
+            alert('复制失败，请手动复制：' + text);
+        }
+        document.body.removeChild(textarea);
+    }
+
+    // ================================================================
+    //  [删除并替换] 原“三击群号触发文件上传”改为“三击修改群号文本”
+    // ================================================================
+
+    // 加载已保存的群号
+    (function() {
+        const qqEl = document.getElementById('qqNumberDisplay');
+        if (!qqEl) return;
+        try {
+            const saved = localStorage.getItem('homepage_qq_number');
+            if (saved) qqEl.textContent = saved;
+        } catch(e) {}
+    })();
+
+    // 三击群号：修改文本
+    (function() {
+        const qqEl = document.getElementById('qqNumberDisplay');
+        if (!qqEl) return;
+
+        let qqClickCount = 0;
+        let qqClickTimer = null;
+
+        qqEl.addEventListener('click', function(e) {
+            qqClickCount++;
+            clearTimeout(qqClickTimer);
+            qqClickTimer = setTimeout(() => {
+                qqClickCount = 0;
+            }, 500);
+
+            if (qqClickCount >= 3) {
+                qqClickCount = 0;
+                clearTimeout(qqClickTimer);
+                const current = this.textContent;
+                const newNumber = prompt('修改 QQ 群号：', current);
+                if (newNumber !== null && newNumber.trim() !== '') {
+                    this.textContent = newNumber.trim();
+                    try {
+                        localStorage.setItem('homepage_qq_number', newNumber.trim());
+                    } catch(e) {}
+                }
+            }
+        });
+    })();
+
+    // ================================================================
+    //  [删除并替换] 原“双击修改问卷链接”改为“三击修改问卷链接”
+    // ================================================================
+
+    // 三击问卷链接：修改文本
+    (function() {
+        const linkEl = document.getElementById('surveyLinkDisplay');
+        if (!linkEl) return;
+
+        let surveyClickCount = 0;
+        let surveyClickTimer = null;
+
+        linkEl.addEventListener('click', function(e) {
+            surveyClickCount++;
+            clearTimeout(surveyClickTimer);
+            surveyClickTimer = setTimeout(() => {
+                surveyClickCount = 0;
+            }, 500);
+
+            if (surveyClickCount >= 3) {
+                surveyClickCount = 0;
+                clearTimeout(surveyClickTimer);
+                const current = this.textContent;
+                const newLink = prompt('修改问卷链接：', current);
+                if (newLink !== null && newLink.trim() !== '') {
+                    this.textContent = newLink.trim();
+                    try {
+                        localStorage.setItem('homepage_survey_link', newLink.trim());
+                    } catch(e) {}
+                }
+            }
+        });
+    })();
+
+    // ================================================================
+    //  [新增] QQ 二维码：单击放大预览 + 三击上传替换
+    //  [修复] 统一逻辑：单击放大，点击任意位置（遮罩层）关闭
+    // ================================================================
+    (function() {
+        const container = document.getElementById('qqQrContainer');
+        const uploadInput = document.getElementById('qqQrUpload');
+        const img = document.getElementById('qqQrImage');
+        const hint = document.getElementById('uploadHint');
+        const preview = document.getElementById('imagePreviewOverlay');
+        const previewImg = document.getElementById('previewImage');
+
+        if (!container || !uploadInput) return;
+
+        // 三击计数
+        let qrClickCount = 0;
+        let qrClickTimer = null;
+
+        container.addEventListener('click', function(e) {
+            // 如果点击的是遮罩层触发的，忽略（由遮罩层自己的事件处理关闭）
+            if (e.target.closest && e.target.closest('.image-preview-overlay')) return;
+
+            // 如果没有显示图片，单击不做任何事（或提示上传）
+            if (img.style.display === 'none' || !img.src) {
+                // 三击才触发上传，单击无反应
+                qrClickCount++;
+                clearTimeout(qrClickTimer);
+                qrClickTimer = setTimeout(() => {
+                    qrClickCount = 0;
+                }, 500);
+
+                if (qrClickCount >= 3) {
+                    qrClickCount = 0;
+                    clearTimeout(qrClickTimer);
+                    uploadInput.click();
+                }
+                return;
+            }
+
+            // 有图片：单击 → 放大预览
+            // 先判断是否已经是放大状态，如果是则关闭（由遮罩层点击关闭）
+            // 这里只负责打开
+            if (preview && previewImg && img.src) {
+                // 检查是否已经打开
+                if (!preview.classList.contains('active')) {
+                    previewImg.src = img.src;
+                    preview.classList.add('active');
+                }
+            }
+
+            // 三击 → 上传替换（无论是否有图片）
+            qrClickCount++;
+            clearTimeout(qrClickTimer);
+            qrClickTimer = setTimeout(() => {
+                qrClickCount = 0;
+            }, 500);
+
+            if (qrClickCount >= 3) {
+                qrClickCount = 0;
+                clearTimeout(qrClickTimer);
+                uploadInput.click();
+            }
+        });
+
+        // 上传成功后更新图片
+        uploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const dataUrl = ev.target.result;
+                img.src = dataUrl;
+                img.style.display = 'block';
+                if (hint) hint.style.display = 'none';
+                try {
+                    localStorage.setItem('homepage_qq_qr_image', dataUrl);
+                } catch(e) {
+                    alert('图片过大，请压缩后重试（建议小于200KB）');
+                }
+                alert('✅ QQ群二维码已更新！');
+            };
+            reader.readAsDataURL(file);
+            this.value = '';
+        });
+    })();
+
+    // ================================================================
+    //  [修复] 问卷二维码：单击放大预览关闭问题
+    //  点击任意位置（遮罩层）关闭；三击上传替换
+    // ================================================================
+    (function() {
+        const container = document.getElementById('surveyQrContainer');
+        const uploadInput = document.getElementById('surveyQrUpload');
+        const img = document.getElementById('surveyQrImage');
+        const hint = document.getElementById('surveyUploadHint');
+        const preview = document.getElementById('imagePreviewOverlay');
+        const previewImg = document.getElementById('previewImage');
+
+        if (!container || !uploadInput) return;
+
+        // 三击计数
+        let qrClickCount = 0;
+        let qrClickTimer = null;
+
+        container.addEventListener('click', function(e) {
+            // 如果点击的是遮罩层触发的，忽略（由遮罩层自己的事件处理关闭）
+            if (e.target.closest && e.target.closest('.image-preview-overlay')) return;
+
+            // 如果没有显示图片，单击不做任何事
+            if (img.style.display === 'none' || !img.src) {
+                qrClickCount++;
+                clearTimeout(qrClickTimer);
+                qrClickTimer = setTimeout(() => {
+                    qrClickCount = 0;
+                }, 500);
+
+                if (qrClickCount >= 3) {
+                    qrClickCount = 0;
+                    clearTimeout(qrClickTimer);
+                    uploadInput.click();
+                }
+                return;
+            }
+
+            // 有图片：单击 → 放大预览
+            if (preview && previewImg && img.src) {
+                if (!preview.classList.contains('active')) {
+                    previewImg.src = img.src;
+                    preview.classList.add('active');
+                }
+            }
+
+            // 三击 → 上传替换
+            qrClickCount++;
+            clearTimeout(qrClickTimer);
+            qrClickTimer = setTimeout(() => {
+                qrClickCount = 0;
+            }, 500);
+
+            if (qrClickCount >= 3) {
+                qrClickCount = 0;
+                clearTimeout(qrClickTimer);
+                uploadInput.click();
+            }
+        });
+
+        // 上传成功后更新图片
+        uploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const dataUrl = ev.target.result;
+                img.src = dataUrl;
+                img.style.display = 'block';
+                if (hint) hint.style.display = 'none';
+                try {
+                    localStorage.setItem('homepage_survey_qr_image', dataUrl);
+                } catch(e) {
+                    alert('图片过大，请压缩后重试（建议小于200KB）');
+                }
+                alert('✅ 问卷二维码已更新！');
+            };
+            reader.readAsDataURL(file);
+            this.value = '';
+        });
+
+        // ★ 复用现有的遮罩层点击关闭逻辑
+        // 遮罩层已有点击事件，会在下面的独立代码中处理
+    })();
+
+    // ================================================================
+    //  左上角 Logo 点击切换左右边栏（默认隐藏）
+    // ================================================================
+    (function() {
+        const toggleBtn = document.getElementById('toggleSidebarBtn');
+        if (!toggleBtn) return;
+
+        const left = document.querySelector('.qq-sidebar');
+        const right = document.querySelector('.tools-sidebar');
+
+        let sidebarsVisible = false;
+
+        // ★ 默认隐藏
+        if (left) left.style.display = 'none';
+        if (right) right.style.display = 'none';
+
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (sidebarsVisible) {
+                if (left) left.style.display = 'none';
+                if (right) right.style.display = 'none';
+            } else {
+                if (left) left.style.display = 'flex';
+                if (right) right.style.display = 'flex';
+            }
+            sidebarsVisible = !sidebarsVisible;
+        });
+    })();
+
+    // ================================================================
+    //  启动
+    // ================================================================
+
+    // 加载已保存的二维码
+    loadQrImage();
+
+    render();
+
+    // ================================================================
+    // [新增] 教学工具侧边栏（完全独立，不干扰原有功能）
+    // ================================================================
+    (function() {
+        'use strict';
+
+        // ★ 修复：使用固定全局键，不依赖 CURRENT_CLASS
+        const TOOLS_KEY = 'teaching_tools_global';
+
+        // 尝试迁移旧的按班级存储的数据（如果有）
+        function migrateOldData() {
+            try {
+                // 检查是否存在旧的班级数据（假设之前可能存过）
+                // 我们尝试读取一个可能的旧键，如果存在则迁移到全局键
+                const oldKeys = ['teaching_tools_一班', 'teaching_tools_default'];
+                for (let oldKey of oldKeys) {
+                    const raw = localStorage.getItem(oldKey);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            // 如果旧数据存在且新数据为空，则迁移
+                            const current = localStorage.getItem(TOOLS_KEY);
+                            if (!current) {
+                                localStorage.setItem(TOOLS_KEY, raw);
+                                // 删除旧键（可选）
+                                // localStorage.removeItem(oldKey);
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        // ===== 默认列表（资源5个 + 研修4个） =====
+        const DEFAULT_TOOLS = [
+    // ===== 资源类 =====
+    { name: '国家中小学智慧教育平台', url: 'https://basic.smartedu.cn/', type: 'resource' },
+    { name: '学科网', url: 'https://www.zxxk.com/', type: 'resource' },
+    { name: '21世纪教育网', url: 'https://www.21cnjy.com/', type: 'resource' },
+    { name: '菁优网', url: 'https://www.jyeoo.com/', type: 'resource' },
+    { name: '教习网', url: 'https://www.51jiaoxi.com/', type: 'resource' },
+    { name: '出卷网', url: 'https://www.chujuan.net/', type: 'resource' },
+    // ===== 研修类 =====
+    { name: '中国教师研修网', url: 'https://www.teacherclub.com.cn/', type: 'research' },
+    { name: '中国知网·基础教育', url: 'https://www.cnki.net/', type: 'research' },
+    { name: '教师教育网(接口)', url: '#', type: 'research' },
+    { name: '教育部官网', url: 'https://www.moe.gov.cn/', type: 'research' }
+];
+
+        let tools = [];
+
+        // ---- 数据迁移：把旧数据（无 type 字段）自动升级 ----
+        function migrateOldDataFormat(oldTools) {
+            if (!oldTools || oldTools.length === 0) return null;
+            if (oldTools[0] && oldTools[0].type) return oldTools;
+
+            const migrated = oldTools.map((item, index) => {
+                return {
+                    name: item.name,
+                    url: item.url || '#',
+                    type: index < 5 ? 'resource' : 'research'
+                };
+            });
+            return migrated;
+        }
+
+        function loadTools() {
+            // 先尝试迁移旧班级数据到全局键
+            migrateOldData();
+
+            try {
+                const raw = localStorage.getItem(TOOLS_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        const migrated = migrateOldDataFormat(parsed);
+                        if (migrated) {
+                            tools = migrated;
+                            saveTools();
+                            return;
+                        }
+                        tools = parsed;
+                        return;
+                    }
+                }
+            } catch(e) {}
+            tools = JSON.parse(JSON.stringify(DEFAULT_TOOLS));
+            saveTools();
+        }
+
+        function saveTools() {
+            try {
+                localStorage.setItem(TOOLS_KEY, JSON.stringify(tools));
+            } catch(e) { console.warn('保存工具列表失败'); }
+        }
+
+        // ---- 渲染 ----
+        function renderTools() {
+            const container = document.getElementById('toolsList');
+            if (!container) return;
+
+            const resources = tools.filter(item => item.type === 'resource');
+            const researches = tools.filter(item => item.type === 'research');
+
+            if (tools.length === 0) {
+                container.innerHTML = '<div class="empty-tip" style="color:#94a3b8;text-align:center;font-size:12px;padding:12px 0;">📭 暂无工具</div>';
+                return;
+            }
+
+            let html = '';
+
+            html += `<div class="section-divider"><span>资 源（${resources.length}）</span></div>`;
+            resources.forEach((item, idx) => {
+                const realIndex = tools.indexOf(item);
+                html += renderToolItem(item, realIndex);
+            });
+
+            html += `<div class="section-divider"><span>研 修（${researches.length}）</span></div>`;
+            researches.forEach((item, idx) => {
+                const realIndex = tools.indexOf(item);
+                html += renderToolItem(item, realIndex);
+            });
+
+            container.innerHTML = html;
+
+            // ---- 绑定事件 ----
+            container.querySelectorAll('.tool-item').forEach((el) => {
+                const index = parseInt(el.dataset.index);
+                if (isNaN(index) || index >= tools.length) return;
+
+                // 删除
+                const delBtn = el.querySelector('.tool-del');
+                if (delBtn) {
+                    delBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        if (confirm('删除「' + tools[index].name + '」？')) {
+                            tools.splice(index, 1);
+                            saveTools();
+                            renderTools();
+                        }
+                    });
+                }
+
+                // 单击/双击
+                setupItemClick(el, index);
+
+                // 拖拽
+                el.addEventListener('dragstart', function(e) {
+                    const idx = parseInt(this.dataset.index);
+                    if (isNaN(idx) || idx >= tools.length) { e.preventDefault(); return; }
+                    this.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', String(idx));
+                });
+
+                el.addEventListener('dragend', function(e) {
+                    this.classList.remove('dragging');
+                    document.querySelectorAll('.tool-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+                });
+
+                el.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    document.querySelectorAll('.tool-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    this.classList.add('drag-over');
+                });
+
+                el.addEventListener('dragleave', function(e) {
+                    this.classList.remove('drag-over');
+                });
+
+                el.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+
+                    const dragIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                    const dropIndex = parseInt(this.dataset.index);
+
+                    if (isNaN(dragIndex) || isNaN(dropIndex) || dragIndex === dropIndex) return;
+                    if (dragIndex >= tools.length || dropIndex >= tools.length) return;
+
+                    const draggedItem = tools[dragIndex];
+                    const dropItem = tools[dropIndex];
+
+                    // ★ 关键：根据目标位置自动更新分类
+                    const dropType = dropItem.type;
+                    if (draggedItem.type !== dropType) {
+                        draggedItem.type = dropType;
+                    }
+
+                    // 执行移动
+                    const [moved] = tools.splice(dragIndex, 1);
+                    const adjustedDropIndex = dragIndex < dropIndex ? dropIndex - 1 : dropIndex;
+                    tools.splice(adjustedDropIndex, 0, moved);
+
+                    saveTools();
+                    renderTools();
+                });
+            });
+        }
+
+        // ---- 单击/双击逻辑 ----
+        function setupItemClick(el, index) {
+            let clickTimer = null;
+
+            el.addEventListener('click', function(e) {
+                if (e.target.classList.contains('tool-del')) return;
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    return;
+                }
+                const item = tools[index];
+                if (!item || item.url === '#' || item.url === '') return;
+               clickTimer = setTimeout(() => {
+    clickTimer = null;
+    let url = item.url;
+    // 如果链接是 http 开头，自动升级为 https
+    if (url && url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+    }
+    window.open(url, '_blank');
+}, 250);
+            });
+
+            el.addEventListener('dblclick', function(e) {
+                if (e.target.classList.contains('tool-del')) return;
+                if (clickTimer) {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                }
+                const item = tools[index];
+                if (!item) return;
+
+                const newName = prompt('修改名称：', item.name);
+                if (newName === null || newName.trim() === '') return;
+
+                const newUrl = prompt('修改网址（含 https://）：', item.url);
+                if (newUrl === null) return;
+
+                let cleanUrl = newUrl.trim();
+                if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+                    cleanUrl = 'https://' + cleanUrl;
+                }
+
+                tools[index].name = newName.trim();
+                tools[index].url = cleanUrl || '#';
+
+                saveTools();
+                renderTools();
+            });
+        }
+
+        function renderToolItem(item, index) {
+            const isPlaceholder = item.url === '#' || (item.name && item.name.includes('预留'));
+            const placeholderClass = isPlaceholder ? 'is-placeholder' : '';
+            const displayTitle = item.url !== '#' && item.url !== '' ?
+                item.name + ' (' + item.url + ')' :
+                item.name;
+            return `
+                <div class="tool-item ${placeholderClass}" draggable="true" data-index="${index}">
+                    <span class="tool-name" title="${displayTitle}">${item.name}</span>
+                    <span class="tool-del" data-index="${index}" title="删除">✕</span>
+                </div>
+            `;
+        }
+
+        // ---- 新增链接（默认放入研修，无弹窗） ----
+        function addTool() {
+            const nameInput = document.getElementById('toolNameInput');
+            const urlInput = document.getElementById('toolUrlInput');
+            const name = nameInput.value.trim();
+            let url = urlInput.value.trim();
+
+            if (!name) { alert('请输入名称'); nameInput.focus(); return; }
+            if (!url) { alert('请输入网址'); urlInput.focus(); return; }
+            if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+            try { new URL(url); } catch(e) { alert('网址格式不正确'); urlInput.focus(); return; }
+
+            tools.push({ name, url, type: 'research' });
+            saveTools();
+            renderTools();
+            nameInput.value = '';
+            urlInput.value = '';
+            nameInput.focus();
+
+            // 给个轻提示
+            const hint = document.querySelector('.tools-footer-hint');
+            if (hint) {
+                const orig = hint.innerHTML;
+                hint.innerHTML = '✅ 已添加到「研修」，拖到「资源」区可切换分类';
+                setTimeout(() => { hint.innerHTML = orig; }, 2500);
+            }
+        }
+
+        // ---- 重置 ----
+        function resetDefault() {
+            if (!confirm('重置将恢复默认工具列表，确定吗？')) return;
+            tools = JSON.parse(JSON.stringify(DEFAULT_TOOLS));
+            saveTools();
+            renderTools();
+        }
+
+        // ---- 绑定按钮 ----
+        const addBtn = document.getElementById('addToolBtn');
+        const resetBtn = document.getElementById('resetToolsBtn');
+        const nameInput = document.getElementById('toolNameInput');
+        const urlInput = document.getElementById('toolUrlInput');
+
+        if (addBtn) addBtn.addEventListener('click', addTool);
+        if (resetBtn) resetBtn.addEventListener('click', resetDefault);
+
+        if (nameInput) {
+            nameInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); if (urlInput) urlInput.focus(); }
+            });
+        }
+        if (urlInput) {
+            urlInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); if (addBtn) addBtn.click(); }
+            });
+        }
+
+        // ---- 启动 ----
+        loadTools();
+        renderTools();
+        console.log('🔗 教学工具（拖拽自动分类版）已加载（全局数据）');
+    })();
+
+    // ================================================================
+    // [新增] 问卷调查功能（与QQ群样式统一）
+    // ================================================================
+    (function() {
+        'use strict';
+
+        const SURVEY_QR_KEY = 'homepage_survey_qr_image';
+        const SURVEY_LINK_KEY = 'homepage_survey_link';
+        const DEFAULT_SURVEY_LINK = 'https://v.wjx.cn/vm/rxA9ZYe.aspx';
+
+        // ===== 加载问卷二维码 =====
+        function loadSurveyQr() {
+            const img = document.getElementById('surveyQrImage');
+            const hint = document.getElementById('surveyUploadHint');
+
+            // 先检查 localStorage
+            try {
+                const data = localStorage.getItem(SURVEY_QR_KEY);
+                if (data) {
+                    img.src = data;
+                    img.style.display = 'block';
+                    if (hint) hint.style.display = 'none';
+                    return;
+                }
+            } catch(e) {}
+
+            // 没有缓存，尝试加载固定路径 qrcode.jpg
+            const FIXED_PATH = 'qrcode.jpg';
+            img.src = FIXED_PATH;
+            img.onload = function() {
+                img.style.display = 'block';
+                if (hint) hint.style.display = 'none';
+            };
+            img.onerror = function() {
+                img.style.display = 'none';
+                if (hint) hint.style.display = 'block';
+            };
+        }
+
+        // ===== 加载问卷链接 =====
+        function loadSurveyLink() {
+            const linkDisplay = document.getElementById('surveyLinkDisplay');
+            if (!linkDisplay) return;
+            try {
+                const saved = localStorage.getItem(SURVEY_LINK_KEY);
+                if (saved) {
+                    linkDisplay.textContent = saved;
+                    return;
+                }
+            } catch(e) {}
+            linkDisplay.textContent = DEFAULT_SURVEY_LINK;
+            localStorage.setItem(SURVEY_LINK_KEY, DEFAULT_SURVEY_LINK);
+        }
+
+        // ===== 保存问卷链接 =====
+        function saveSurveyLink(link) {
+            try {
+                localStorage.setItem(SURVEY_LINK_KEY, link);
+            } catch(e) {}
+        }
+
+        // ===== 上传问卷二维码 =====
+        function setupSurveyUpload() {
+            const uploadInput = document.getElementById('surveyQrUpload');
+            const img = document.getElementById('surveyQrImage');
+            const hint = document.getElementById('surveyUploadHint');
+
+            if (!uploadInput) return;
+
+            uploadInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const dataUrl = ev.target.result;
+                    img.src = dataUrl;
+                    img.style.display = 'block';
+                    if (hint) hint.style.display = 'none';
+                    try {
+                        localStorage.setItem(SURVEY_QR_KEY, dataUrl);
+                    } catch(e) {
+                        alert('图片过大，请压缩后重试（建议小于200KB）');
+                    }
+                    alert('✅ 问卷二维码已更新！');
+                };
+                reader.readAsDataURL(file);
+                this.value = '';
+            });
+        }
+
+        // ================================================================
+        //  [移除原有冲突逻辑] 原 setupSurveyQrPreview 已被上方独立的
+        //  [新增] QQ/问卷二维码逻辑统一覆盖，此处保留空函数以防调用报错
+        // ================================================================
+        function setupSurveyQrPreview() {
+            // 功能已由上方的独立 IIFE 实现，此处保留占位
+        }
+
+        // ===== 复制问卷链接 =====
+        function setupCopyLink() {
+            const btn = document.getElementById('copySurveyLinkBtn');
+            const linkDisplay = document.getElementById('surveyLinkDisplay');
+            if (!btn || !linkDisplay) return;
+
+            btn.addEventListener('click', function() {
+                const link = linkDisplay.textContent;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(link).then(() => {
+                        this.textContent = '✅ 已复制';
+                        this.classList.add('copied');
+                        setTimeout(() => {
+                            this.textContent = '📋 复制问卷链接';
+                            this.classList.remove('copied');
+                        }, 2000);
+                    }).catch(() => {
+                        copyLinkFallback(link);
+                    });
+                } else {
+                    copyLinkFallback(link);
+                }
+            });
+        }
+
+        function copyLinkFallback(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('链接已复制！');
+            } catch (e) {
+                alert('复制失败，请手动复制：' + text);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // ===== 启动 =====
+        loadSurveyQr();
+        loadSurveyLink();
+        setupSurveyUpload();
+        // 注意：原 setupSurveyQrPreview 已被新的统一逻辑替代
+        // 此处不再重复调用，避免事件冲突
+        setupCopyLink();
+
+        console.log('📋 问卷调查功能已加载');
+    })();
+
+    // ================================================================
+    //  [保留] 遮罩层点击关闭（已存在，但确保其正常工作）
+    //  点击遮罩层关闭放大预览
+    // ================================================================
+    (function() {
+        const overlay = document.getElementById('imagePreviewOverlay');
+        if (!overlay) return;
+
+        // 如果已经绑定了事件，不重复绑定；但为了安全，使用独立事件
+        // 注意：原有代码中已有 click 事件，这里添加一个确保关闭
+        overlay.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+            }
+        });
+    })();
+</script>
+
+<script>
+(function() {
+    'use strict';
+
+    var installBtn = document.getElementById('installBtn');
+    if (!installBtn) return;
+
+    function isStandalone() {
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+        if (window.navigator.standalone === true) return true;
+        return false;
+    }
+
+    function isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    }
+
+    if (isStandalone()) {
+        installBtn.style.display = 'none';
+        return;
+    }
+
+    // 注册 Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./sw.js')
+                .then(function(reg) { console.log('✅ SW 已注册:', reg.scope); })
+                .catch(function(err) { console.warn('⚠️ SW 注册失败:', err); });
+        });
+    }
+
+    var deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'inline-flex';
+    });
+
+    window.addEventListener('appinstalled', function() {
+        installBtn.style.display = 'none';
+        deferredPrompt = null;
+    });
+
+    installBtn.addEventListener('click', function() {
+        if (isIOS()) {
+            alert('📲 添加到主屏幕\n\n1. 点击底部中间的「分享」按钮 ⬆️\n2. 向下滑动找到「添加到主屏幕」\n3. 点击右上角「添加」\n\n完成后返回桌面即可看到图标。');
+            return;
+        }
+        if (!deferredPrompt) {
+            alert('📲 若浏览器支持，请点击右上角菜单：\n\n· Chrome：菜单 → 安装应用\n· Edge：菜单 → 应用 → 安装此站点为应用\n\n注意：必须通过网址访问（HTTPS），file:// 打开无法安装。');
+            return;
+        }
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(choice) {
+            if (choice.outcome === 'accepted') installBtn.style.display = 'none';
+            deferredPrompt = null;
+        });
+    });
+
+    // iOS 兜底显示
+    if (isIOS() && !isStandalone()) {
+        setTimeout(function() { installBtn.style.display = 'inline-flex'; }, 500);
+    }
+
+    // 其他浏览器兜底：3 秒后还没收到事件也显示
+    setTimeout(function() {
+        if (installBtn.style.display === 'none' && !isStandalone() && !isIOS()) {
+            if ('serviceWorker' in navigator) {
+                installBtn.style.display = 'inline-flex';
+                installBtn.textContent = '📲 安装应用';
+                installBtn.title = '需要 HTTPS 访问才能安装';
+            }
+        }
+    }, 3000);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1727 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>⚔️ 斗蛐蛐 · 完整版</title>
+    <style>
+        /* ===== 全局重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #0b1a2a;
+            color: #fff;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+        .pet-app {
+            width: 100%;
+            max-width: 1400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: rgba(255,255,255,0.04);
+            border-radius: 24px;
+            padding: 16px 20px 20px;
+            border: 1px solid rgba(255,255,255,0.06);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ===== 顶部工具栏 ===== */
+        .battle-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px 14px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .battle-toolbar .title {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e74c3c, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .battle-toolbar .info {
+            font-size: 14px;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .battle-toolbar .info .stat {
+            background: rgba(255,255,255,0.06);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .btn-next {
+            background: #f39c12;
+            border: none;
+            color: #fff;
+            padding: 6px 20px;
+            border-radius: 30px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-next:hover {
+            transform: scale(1.05);
+            background: #e67e22;
+        }
+        .btn-next:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .back-link {
+            color: #6c5ce7;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* ===== 战场容器 ===== */
+        .battle-center {
+            flex: 1;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #3a8c3a;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.2);
+            min-height: 300px;
+        }
+        .battle-center .pet-park {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .battle-center .pet-park .track {
+            position: absolute;
+            top: 15%;
+            left: 10%;
+            width: 80%;
+            height: 70%;
+            border: 10px solid rgba(180,150,130,0.5);
+            border-radius: 50%;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .battle-center .pet-park .track::after {
+            content: '';
+            position: absolute;
+            top: 8%;
+            left: 8%;
+            width: 84%;
+            height: 84%;
+            border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 50%;
+        }
+        .battle-center .pet-park .football-field {
+            position: absolute;
+            top: 30%;
+            left: 25%;
+            width: 50%;
+            height: 40%;
+            border: 2px solid rgba(255,255,255,0.4);
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .battle-center .pet-park .football-field::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30%;
+            height: 60%;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .battle-center .pet-park .football-field::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: rgba(255,255,255,0.4);
+            transform: translateX(-50%);
+        }
+        .battle-center .pet-park .flag-area {
+            position: absolute;
+            top: 5%;
+            left: 4%;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .battle-center .pet-park .flag-pole {
+            width: 4px;
+            height: 70px;
+            background: #aaa;
+            margin: 0 auto;
+            border-radius: 2px;
+            position: relative;
+        }
+        .battle-center .pet-park .flag-pole::after {
+            content: '🇨🇳';
+            position: absolute;
+            top: -6px;
+            left: 6px;
+            font-size: 28px;
+            line-height: 1;
+        }
+        .battle-center .pet-park .flag-base {
+            width: 20px;
+            height: 5px;
+            background: #999;
+            border-radius: 3px;
+            margin: -2px auto 0;
+        }
+        .battle-center .pet-park .tree {
+            position: absolute;
+            font-size: 26px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.85;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        /* ===== 左右面板 ===== */
+        #battleAttrPanel {
+            position: fixed;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            width: 150px;
+            max-height: 70vh;
+            background: rgba(10, 20, 35, 0.92);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 10px 10px;
+            border: 1px solid rgba(255,215,0,0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            display: none;
+            font-size: 11px;
+            color: #ccc;
+            transition: opacity 0.3s;
+        }
+        #battleAttrPanel.visible { display: block; }
+        #battleAttrPanel .panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255,215,0,0.15);
+            padding-bottom: 4px;
+        }
+        #battleAttrPanel .no-selection {
+            color: #666;
+            font-size: 12px;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .pet-block {
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+        }
+        .pet-block .pet-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .pet-block .pet-header .avatar { font-size: 20px; line-height: 1; }
+        .pet-block .pet-header .pname { font-size: 12px; font-weight: 700; color: #fff; }
+        .pet-block .pet-header .pgroup { font-size: 9px; color: #888; }
+        .pet-block .attr-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1px 0;
+            font-size: 9px;
+            line-height: 1.3;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .pet-block .attr-row .label { color: #999; }
+        .pet-block .attr-row .value { color: #fff; font-weight: 600; text-align: right; }
+        .pet-block .attr-row .value.high { color: #2ecc71; }
+        .pet-block .attr-row .value.low { color: #e74c3c; }
+        .pet-block .attr-row .value.mana { color: #3498db; }
+        .pet-block .attr-row .value.banned { color: #e74c3c; font-weight: 700; }
+        .pet-block .skill-cd {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 3px;
+            padding-top: 3px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            font-size: 9px;
+            color: #888;
+        }
+        .pet-block .skill-cd .cd-bar-wrap {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .pet-block .skill-cd .cd-bar-wrap .cd-bar {
+            height: 100%;
+            background: #3498db;
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .pet-block .skill-cd .cd-label {
+            font-size: 8px;
+            color: #aaa;
+            min-width: 28px;
+            text-align: right;
+        }
+        .pet-block .kills-list {
+            font-size: 9px;
+            color: #888;
+            margin-top: 4px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            padding-top: 4px;
+        }
+        .pet-block .kills-list .kill-item {
+            display: inline-block;
+            background: rgba(255,215,0,0.1);
+            padding: 0 6px;
+            border-radius: 10px;
+            margin: 1px 2px 1px 0;
+            font-size: 8px;
+            color: #ffd700;
+        }
+        .pet-block .status-tag {
+            display: inline-block;
+            font-size: 8px;
+            padding: 0 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+        .pet-block .status-tag.stunned { background: rgba(0,150,255,0.3); color: #00bfff; }
+        .pet-block .status-tag.regen { background: rgba(46,204,113,0.3); color: #2ecc71; }
+        .pet-block .status-tag.lifesteal { background: rgba(46,204,113,0.3); color: #2ecc71; }
+
+        #battleStatPanel {
+            position: fixed;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            width: 130px;
+            max-height: 70vh;
+            background: rgba(10, 20, 35, 0.92);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 10px 10px;
+            border: 1px solid rgba(255,215,0,0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            display: none;
+            font-size: 11px;
+            color: #ccc;
+            transition: opacity 0.3s;
+        }
+        #battleStatPanel.visible { display: block; }
+        #battleStatPanel .panel-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(255,215,0,0.15);
+            padding-bottom: 4px;
+        }
+        .group-block {
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 6px;
+        }
+        .group-block .group-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffd700;
+            margin-bottom: 4px;
+        }
+        .group-block .member-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            padding: 1px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .group-block .member-item .mname { color: #ccc; }
+        .group-block .member-item .mhp { color: #aaa; font-weight: 500; }
+        .group-block .member-item.dead .mname { color: #555; }
+        .group-block .member-item.dead .mhp { color: #444; }
+        .group-block .member-item .mhp .hp-bar-mini {
+            display: inline-block;
+            width: 30px;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            margin-left: 4px;
+            overflow: hidden;
+            vertical-align: middle;
+        }
+        .group-block .member-item .mhp .hp-bar-mini .fill {
+            height: 100%;
+            background: #2ecc71;
+            border-radius: 2px;
+            transition: width 0.2s;
+        }
+        .group-block .member-item.dead .mhp .hp-bar-mini .fill { background: #444; }
+
+        /* ===== 滚动条 ===== */
+        #battleAttrPanel::-webkit-scrollbar,
+        #battleStatPanel::-webkit-scrollbar { width: 2px; }
+        #battleAttrPanel::-webkit-scrollbar-track,
+        #battleStatPanel::-webkit-scrollbar-track { background: transparent; }
+        #battleAttrPanel::-webkit-scrollbar-thumb,
+        #battleStatPanel::-webkit-scrollbar-thumb { background: #555; border-radius: 10px; }
+
+        /* ===== 宠物卡片 ===== */
+        .pet-card {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: transparent !important;
+            border: none !important;
+            cursor: pointer;
+            transition: transform 0.1s;
+            z-index: 10;
+            touch-action: none;
+        }
+        .pet-card:hover { transform: scale(1.08); filter: drop-shadow(0 0 8px rgba(255,215,0,0.3)); }
+        .pet-card .pet-emoji {
+            font-size: 16px;
+            line-height: 1;
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.2));
+            transition: font-size 0.3s ease;
+        }
+        .pet-card .pet-name {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 7px;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(0,0,0,0.6);
+            padding: 0 4px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,215,0,0.2);
+            white-space: nowrap;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            pointer-events: none;
+            backdrop-filter: blur(2px);
+        }
+        .pet-card .badge {
+            position: absolute;
+            font-size: 6px;
+            font-weight: 700;
+            background: rgba(0,0,0,0.7);
+            border-radius: 50%;
+            width: 12px;
+            height: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid rgba(255,255,255,0.2);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            pointer-events: none;
+            backdrop-filter: blur(2px);
+        }
+        .pet-card .badge.top-left { top: -4px; left: -4px; }
+        .pet-card .badge.top-right { top: -4px; right: -4px; border-radius: 10px; width: auto; padding: 0 4px; font-size: 6px; background: rgba(255,215,0,0.3); border-color: #ffd700; }
+        .pet-card .badge.color-1 { color: #fff; border-color: #fff; }
+        .pet-card .badge.color-2 { color: #3498db; border-color: #3498db; }
+        .pet-card .badge.color-3 { color: #2ecc71; border-color: #2ecc71; }
+        .pet-card .badge.color-4 { color: #f1c40f; border-color: #f1c40f; }
+        .pet-card .badge.color-5 { color: #e74c3c; border-color: #e74c3c; }
+        .pet-card .badge.color-6 { color: #2c3e50; border-color: #2c3e50; background: rgba(255,255,255,0.3); }
+        .pet-card .hp-bar-wrap,
+        .pet-card .mana-bar-wrap {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.6);
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
+            z-index: 12;
+        }
+        .pet-card .hp-bar-wrap { bottom: -14px; height: 3px; }
+        .pet-card .mana-bar-wrap { bottom: -19px; height: 2px; }
+        .pet-card .hp-bar { height: 100%; background: #2ecc71; transition: width 0.3s; border-radius: 2px; }
+        .pet-card .mana-bar { height: 100%; background: #3498db; transition: width 0.3s; border-radius: 2px; }
+        .pet-card .stun-icon {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            animation: stunPulse 0.6s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 14;
+        }
+        .pet-card.dead { display: none !important; }
+        .pet-card.selected {
+            outline: 3px solid #ffd700;
+            outline-offset: 4px;
+            border-radius: 12px;
+            z-index: 20;
+        }
+
+        /* ===== 特效文字 ===== */
+        .battle-damage {
+            position: absolute;
+            font-weight: 900;
+            text-shadow: 0 0 12px rgba(0,0,0,0.8), 0 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 50;
+            animation: damageFloat 1.2s ease-out forwards;
+            font-family: 'Microsoft YaHei', sans-serif;
+            font-size: 14px !important;
+        }
+        @keyframes damageFloat {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
+        }
+        .skill-effect {
+            position: absolute;
+            pointer-events: none;
+            z-index: 45;
+            animation: skillPulse 0.8s ease-out forwards;
+            text-shadow: 0 0 30px rgba(255,215,0,0.6);
+            font-size: 24px !important;
+        }
+        @keyframes skillPulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(0.8); opacity: 0; }
+        }
+        @keyframes stunPulse {
+            0% { transform: translateX(-50%) scale(0.8); opacity: 0.5; }
+            100% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+        }
+        .battle-status {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 20px;
+            border: 3px solid #ffd700;
+            text-align: center;
+            pointer-events: none;
+        }
+        .battle-status .winner {
+            font-size: 36px;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 40px rgba(255,215,0,0.4);
+        }
+        .battle-status .sub {
+            font-size: 16px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 820px) {
+            #battleAttrPanel { width: 130px; left: 4px; padding: 8px 6px; font-size: 10px; }
+            #battleStatPanel { width: 110px; right: 4px; padding: 8px 6px; font-size: 10px; }
+            .battle-toolbar .title { font-size: 18px; }
+        }
+        @media (max-width: 480px) {
+            #battleAttrPanel { width: 110px; left: 2px; padding: 6px 4px; font-size: 9px; max-height: 60vh; }
+            #battleStatPanel { width: 90px; right: 2px; padding: 6px 4px; font-size: 9px; max-height: 60vh; }
+            .battle-toolbar .title { font-size: 15px; }
+            .battle-toolbar .info .stat { font-size: 10px; padding: 2px 6px; }
+            .btn-next { font-size: 11px; padding: 4px 10px; }
+            .pet-card .pet-emoji { font-size: 14px; }
+            .pet-card .pet-name { font-size: 6px; top: -6px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="pet-app">
+        <!-- 顶部工具栏 -->
+        <div class="battle-toolbar">
+            <span class="title">⚔️ 斗蛐蛐 · 完整版</span>
+            <div class="info">
+                <span class="stat" id="battleStatusText">⏳ 战斗中...</span>
+                <span class="stat" id="playerCount">👤 0</span>
+                <span class="stat" id="roundCount">🔄 第 0 局</span>
+                <button class="btn-next" id="nextRoundBtn">▶ 下一局</button>
+               <a href="home.html" class="back-link" style="display: inline-flex; align-items: center; justify-content: center;">
+    <img src="logo.svg" alt="logo" style="width:40px; height:40px;">
+</a>
+            </div>
+        </div>
+
+        <!-- 战场 -->
+        <div class="battle-center">
+            <div class="pet-park" id="petPark">
+                <div class="track"></div>
+                <div class="football-field"></div>
+                <div class="flag-area">
+                    <div class="flag-pole"></div>
+                    <div class="flag-base"></div>
+                </div>
+                <div class="tree" style="top:3%; left:2%;">🌳</div>
+                <div class="tree" style="top:2%; right:2%;">🌲</div>
+                <div class="tree" style="bottom:2%; left:2%;">🌴</div>
+                <div class="tree" style="bottom:2%; right:2%;">🌳</div>
+                <div class="tree" style="top:40%; left:1%;">🌲</div>
+                <div class="tree" style="top:40%; right:1%;">🌴</div>
+                <div class="tree" style="top:15%; left:45%;">🌳</div>
+                <div class="tree" style="bottom:15%; right:45%;">🌲</div>
+                <div class="tree" style="top:60%; left:3%;">🌴</div>
+                <div class="tree" style="top:60%; right:3%;">🌳</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 左右面板 -->
+    <div id="battleAttrPanel">
+        <div class="panel-title">📊 属性</div>
+        <div id="attrContent">
+            <div class="no-selection">👆 Shift+点击 切换选中</div>
+        </div>
+    </div>
+    <div id="battleStatPanel">
+        <div class="panel-title">📊 小组</div>
+        <div id="groupStatsContent">
+            <div style="color:#666;font-size:12px;text-align:center;padding:10px 0;">等待数据...</div>
+        </div>
+    </div>
+
+    <div class="fx-container" id="fxContainer"></div>
+    <div class="float-toast" id="floatToast"></div>
+
+    <script src="dataManager.js"></script>
+    <script>
+        // ================================================================
+        //  斗蛐蛐 · 完整版
+        //  体力 = 每周参赛次数（道德分），每场消耗1点
+        //  左侧无血条，增加技能CD显示，图标一致，实时效果
+        //  锁敌优先同号 (seatOrder)
+        //  修复最后不追击的bug
+        // ================================================================
+
+        (function() {
+            'use strict';
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const CURRENT_CLASS = urlParams.get('classId') || urlParams.get('class') || localStorage.getItem('currentClassId') || '一班';
+
+            const CATEGORIES = ['安全','道德','艺体','学习','纪律','卫生','仪态','就餐','住宿','走读'];
+            const SUBJECTS = ['语文','数学','英语','物理','化学','历史','地理','生物','政治'];
+
+            const ATTACK_COOLDOWN = 60;
+            const SKILL_COOLDOWN = 300;
+            const REGEN_INTERVAL = 300;
+            const ATTACK_RANGE = 50;
+            const CHASE_RANGE = 75;
+            const COLLISION_RADIUS_RATIO = 0.4;
+            const COLLISION_COOLDOWN = 300;
+            const ESCAPE_THRESHOLD = 0.30;
+            const CAUTIOUS_THRESHOLD = 0.50;
+            const ESCAPE_DIST = 200;
+            const SMOOTH_FACTOR = 0.3;
+
+            let students = [];
+            let petPositions = {};
+            let collisionTimers = {};
+            let petAnimId = null;
+            let selectedBattlePetIds = new Set();
+            let deathTimestamps = {};
+            let frameCount = 0;
+
+            let battle = {
+                isActive: false,
+                isGameOver: false,
+                winnerGroup: null,
+                round: 0,
+                records: {},
+                hp: {},
+                maxHp: {},
+                stamina: {},
+                mana: {},
+                isAlive: {},
+                isStunned: {},
+                stunTimer: {},
+                speedReduction: {},
+                lifestealActive: {},
+                lifestealAmount: {},
+                attackTimer: {},
+                skillTimer: {},
+                regenTimer: {},
+                targetId: {},
+                lastAttackTime: {},
+                kills: {},
+                status: {},
+            };
+
+            const park = document.getElementById('petPark');
+            const statusText = document.getElementById('battleStatusText');
+            const playerCountEl = document.getElementById('playerCount');
+            const roundCountEl = document.getElementById('roundCount');
+            const nextBtn = document.getElementById('nextRoundBtn');
+            const attrContent = document.getElementById('attrContent');
+            const groupStatsContent = document.getElementById('groupStatsContent');
+            const attrPanel = document.getElementById('battleAttrPanel');
+            const statPanel = document.getElementById('battleStatPanel');
+
+            // ---------- 工具函数 ----------
+            function calcSubjectTotal(s) {
+                let sum = 0;
+                SUBJECTS.forEach(sub => { sum += s['subject_'+sub] || 0; });
+                return sum;
+            }
+            function calcQuantTotal(s) {
+                return s.cats.reduce((a, b) => a + b, 0);
+            }
+            function getSpeed(quantTotal) {
+                if (quantTotal <= 0) return 0;
+                return Math.min(0.1 + Math.floor(quantTotal / 20) * 0.5, 3.0);
+            }
+            function getEmojiSize(subjectTotal) {
+                if (subjectTotal <= 0) return 0;
+                return Math.min(16 + Math.floor(subjectTotal / 20) * 1.5, 150);
+            }
+
+            function getBattleSpeed(student) {
+                const walkScore = student.cats[9] || 0;
+                const base = Math.max(0, walkScore * 0.12);
+                if (battle.stamina[student.id] <= 0) return 0;
+                if (battle.isStunned[student.id]) return 0;
+                const reduction = battle.speedReduction[student.id] || 0;
+                let speed = Math.max(0, base - reduction * 0.02);
+                if (speed < 0.02) speed = 0;
+                return speed;
+            }
+            function getBattleAttack(student) { return Math.max(0, student.cats[4] || 0); }
+            function getBattleDefense(student) { return Math.max(0, student.cats[5] || 0); }
+            function getBattleTrueDamage(student) { return Math.max(0, student.cats[6] || 0); }
+            function getBattleLifesteal(student) { return Math.max(0, student.cats[7] || 0); }
+            function getBattleControl(student) { return Math.max(0, student.cats[8] || 0); }
+            function getBattleRegen(student) { return Math.max(0, student.cats[3] || 0); }
+            function getBattleManaMax(student) { return Math.max(0, student.cats[2] || 0); }
+            function getBattleStaminaMax(student) { return Math.max(0, student.cats[1] || 0); }
+            function isEligibleForBattle(student) {
+                return student.cats[0] > 0 && battle.isAlive[student.id] !== false;
+            }
+
+            // ---------- 特效 ----------
+            function spawnParticles(x, y, count, colorOverride) {}
+            function spawnDisperseParticles(x, y) {}
+            function trimParticles() {}
+
+            function showBattleDamage(x, y, text, color) {
+                const el = document.createElement('div');
+                el.className = 'battle-damage';
+                el.textContent = text;
+                const size = 14 + Math.random() * 10;
+                el.style.cssText = `
+                    left: ${x}px;
+                    top: ${y}px;
+                    font-size: ${size}px;
+                    color: ${color || '#ff6b6b'};
+                `;
+                park.appendChild(el);
+                setTimeout(() => el.remove(), 1000);
+            }
+
+            function showSkillEffect(x, y, text, color) {
+                const el = document.createElement('div');
+                el.className = 'skill-effect';
+                const size = 24 + Math.random() * 16;
+                el.textContent = text;
+                el.style.cssText = `
+                    left: ${x - size/2}px;
+                    top: ${y - size/2}px;
+                    font-size: ${size}px;
+                `;
+                park.appendChild(el);
+                setTimeout(() => el.remove(), 700);
+            }
+
+            // ================================================================
+            //  面板渲染（无血条，有CD，图标一致）
+            // ================================================================
+            function updateAttributePanel() {
+                if (selectedBattlePetIds.size === 0) {
+                    attrPanel.classList.remove('visible');
+                    return;
+                }
+                attrPanel.classList.add('visible');
+
+                let html = '';
+                const sortedIds = Array.from(selectedBattlePetIds).sort();
+                for (let id of sortedIds) {
+                    const student = students.find(s => s.id === id);
+                    if (!student || !battle.isAlive[id]) {
+                        selectedBattlePetIds.delete(id);
+                        continue;
+                    }
+                    const b = battle;
+                    const banned = student.cats[0] <= 0;
+                    const stamina = b.stamina[id] || 0;
+                    const maxStamina = getBattleStaminaMax(student);
+                    const mana = b.mana[id] || 0;
+                    const maxMana = getBattleManaMax(student);
+                    const regen = getBattleRegen(student);
+                    const atk = getBattleAttack(student);
+                    const def = getBattleDefense(student);
+                    const trueDmg = getBattleTrueDamage(student);
+                    const lifesteal = getBattleLifesteal(student);
+                    const control = getBattleControl(student);
+                    const speed = getBattleSpeed(student);
+
+                    const groupName = student.groupName || '未分组';
+                    const kills = b.kills[id] || [];
+                    let killsHtml = '';
+                    if (kills.length > 0) {
+                        killsHtml = `<div class="kills-list">💀 击败: `;
+                        kills.forEach(vid => {
+                            const v = students.find(s => s.id === vid);
+                            if (v) killsHtml += `<span class="kill-item">${v.animal || '🐱'}${v.name}</span>`;
+                        });
+                        killsHtml += `</div>`;
+                    }
+
+                    const skillTimer = b.skillTimer[id] || 0;
+                    const cdProgress = Math.min(100, (skillTimer / SKILL_COOLDOWN) * 100);
+                    const cdText = skillTimer >= SKILL_COOLDOWN ? '就绪' : `${Math.ceil((SKILL_COOLDOWN - skillTimer) / 60)}s`;
+
+                    let statusTags = '';
+                    if (b.isStunned[id]) statusTags += `<span class="status-tag stunned">💫 定身</span>`;
+                    if (b.lifestealActive[id]) statusTags += `<span class="status-tag lifesteal">💚 吸血</span>`;
+
+                    html += `
+                        <div class="pet-block">
+                            <div class="pet-header">
+                                <div class="avatar">${student.animal || '🐱'}</div>
+                                <div>
+                                    <div class="pname">${student.name} ${statusTags}</div>
+                                    <div class="pgroup">${groupName} · ${b.isAlive[id] ? '🟢' : '💀'}</div>
+                                </div>
+                            </div>
+                            <div class="attr-row"><span class="label">🚫 禁赛</span><span class="value ${banned ? 'banned' : ''}">${banned ? '是' : '否'}</span></div>
+                            <div class="attr-row"><span class="label">💪 体力</span><span class="value">${stamina}/${maxStamina}</span></div>
+                            <div class="attr-row"><span class="label">🔵 蓝量</span><span class="value mana">${mana}/${maxMana}</span></div>
+                            <div class="attr-row"><span class="label">💚 回血/5s</span><span class="value">${regen}</span></div>
+                            <div class="attr-row"><span class="label">⚔️ 攻击</span><span class="value">${atk}</span></div>
+                            <div class="attr-row"><span class="label">🛡️ 防御</span><span class="value">${def}</span></div>
+                            <div class="attr-row"><span class="label">💥 真实伤害</span><span class="value">${trueDmg}</span></div>
+                            <div class="attr-row"><span class="label">💚 吸血</span><span class="value">${lifesteal}</span></div>
+                            <div class="attr-row"><span class="label">🌀 控制</span><span class="value">${control}</span></div>
+                            <div class="attr-row"><span class="label">🏃 移速</span><span class="value">${speed.toFixed(2)}</span></div>
+                            <div class="skill-cd">
+                                <span>🎯 技能</span>
+                                <div class="cd-bar-wrap"><div class="cd-bar" style="width:${cdProgress}%;background:${cdProgress >= 100 ? '#2ecc71' : '#3498db'};"></div></div>
+                                <span class="cd-label">${cdText}</span>
+                            </div>
+                            ${killsHtml}
+                        </div>
+                    `;
+                }
+                attrContent.innerHTML = html;
+            }
+
+            function updateStatPanel() {
+                const groups = {};
+                students.forEach(s => {
+                    if (s.onLeave) return;
+                    const gName = s.groupName || '未分组';
+                    if (!groups[gName]) groups[gName] = [];
+                    groups[gName].push(s);
+                });
+
+                let html = '';
+                const sortedGroupNames = Object.keys(groups).sort();
+                for (let gName of sortedGroupNames) {
+                    const members = groups[gName];
+                    members.sort((a, b) => {
+                        const aAlive = battle.isAlive[a.id];
+                        const bAlive = battle.isAlive[b.id];
+                        if (aAlive && !bAlive) return -1;
+                        if (!aAlive && bAlive) return 1;
+                        if (!aAlive && !bAlive) {
+                            return (deathTimestamps[b.id] || 0) - (deathTimestamps[a.id] || 0);
+                        }
+                        return (battle.hp[b.id] || 0) - (battle.hp[a.id] || 0);
+                    });
+
+                    html += `<div class="group-block"><div class="group-name">${gName}</div>`;
+                    members.forEach(s => {
+                        const isDead = !battle.isAlive[s.id];
+                        const hp = battle.hp[s.id] || 0;
+                        const maxHp = battle.maxHp[s.id] || 1;
+                        const pct = maxHp > 0 ? Math.round((hp / maxHp) * 100) : 0;
+                        const deadClass = isDead ? 'dead' : '';
+                        const hpColor = isDead ? '#444' : (pct > 50 ? '#2ecc71' : (pct > 25 ? '#f1c40f' : '#e74c3c'));
+                        html += `
+                            <div class="member-item ${deadClass}">
+                                <span class="mname">${s.animal || '🐱'} ${s.name}</span>
+                                <span class="mhp">
+                                    ${isDead ? '💀' : `${hp}`}
+                                    <span class="hp-bar-mini"><span class="fill" style="width:${pct}%;background:${hpColor};"></span></span>
+                                </span>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                }
+
+                if (sortedGroupNames.length === 0) {
+                    html = '<div style="color:#666;font-size:11px;text-align:center;padding:10px 0;">暂无数据</div>';
+                }
+                groupStatsContent.innerHTML = html;
+                statPanel.classList.add('visible');
+            }
+
+            // ================================================================
+            //  宠物卡片
+            // ================================================================
+            function createPetCard(student, size, cardW, cardH) {
+                const card = document.createElement('div');
+                card.className = 'pet-card';
+                card.dataset.studentId = student.id;
+                card.style.width = cardW + 'px';
+                card.style.height = cardH + 'px';
+
+                const emoji = document.createElement('div');
+                emoji.className = 'pet-emoji';
+                emoji.style.fontSize = size + 'px';
+                emoji.textContent = student.animal || '🐱';
+                card.appendChild(emoji);
+
+                const nameTag = document.createElement('div');
+                nameTag.className = 'pet-name';
+                nameTag.textContent = student.name;
+                card.appendChild(nameTag);
+
+                const hpWrap = document.createElement('div');
+                hpWrap.className = 'hp-bar-wrap';
+                const hpBar = document.createElement('div');
+                hpBar.className = 'hp-bar';
+                hpBar.id = 'hp_' + student.id;
+                hpWrap.appendChild(hpBar);
+                card.appendChild(hpWrap);
+
+                const manaWrap = document.createElement('div');
+                manaWrap.className = 'mana-bar-wrap';
+                const manaBar = document.createElement('div');
+                manaBar.className = 'mana-bar';
+                manaBar.id = 'mana_' + student.id;
+                manaWrap.appendChild(manaBar);
+                card.appendChild(manaWrap);
+
+                const order = student.seatOrder || 0;
+                if (order >= 1 && order <= 6) {
+                    const badge = document.createElement('div');
+                    badge.className = `badge top-left color-${order}`;
+                    badge.textContent = order;
+                    card.appendChild(badge);
+                }
+                if (student.duty) {
+                    const badge = document.createElement('div');
+                    badge.className = 'badge top-right';
+                    badge.textContent = student.duty;
+                    card.appendChild(badge);
+                }
+
+                card.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const sid = parseInt(this.dataset.studentId);
+                    const s = students.find(st => st.id === sid);
+                    if (!s || !battle.isAlive[sid]) return;
+
+                    if (e.shiftKey) {
+                        if (selectedBattlePetIds.has(sid)) {
+                            selectedBattlePetIds.delete(sid);
+                            this.classList.remove('selected');
+                        } else {
+                            selectedBattlePetIds.add(sid);
+                            this.classList.add('selected');
+                        }
+                        updateAttributePanel();
+                    } else {
+                        document.querySelectorAll('.pet-card.selected').forEach(el => el.classList.remove('selected'));
+                        selectedBattlePetIds.clear();
+                        selectedBattlePetIds.add(sid);
+                        this.classList.add('selected');
+                        updateAttributePanel();
+                    }
+                });
+
+                card.addEventListener('dblclick', function() {
+                    showToast('💡 请在教室页面编辑学生信息');
+                });
+
+                return card;
+            }
+
+            // ================================================================
+            //  数据与战斗初始化
+            // ================================================================
+            function loadStudents() {
+                const data = DataManager.loadClassData(CURRENT_CLASS);
+                if (!data || !data.students || data.students.length === 0) {
+                    students = [];
+                    return false;
+                }
+                students = data.students;
+                students.forEach(s => {
+                    if (!s.cats || s.cats.length !== CATEGORIES.length) s.cats = CATEGORIES.map(() => 0);
+                    if (!s.animal) s.animal = '🐱';
+                    if (!s.petState) s.petState = 'normal';
+                    if (s.onLeave === undefined) s.onLeave = false;
+                    if (!s.duty) s.duty = '';
+                    SUBJECTS.forEach(sub => { if (!(('subject_'+sub) in s)) s['subject_'+sub] = 0; });
+                });
+                return true;
+            }
+
+            function initBattleRecords() {
+                students.forEach(s => {
+                    if (!battle.records[s.id]) {
+                        battle.records[s.id] = { totalGames: 0, usedSkills: 0 };
+                    }
+                    battle.kills[s.id] = [];
+                    battle.status[s.id] = { regen: false, lifesteal: false, stunned: false };
+                });
+            }
+
+            function hideDeadPet(studentId) {
+                const pos = petPositions[studentId];
+                if (pos && pos.el) {
+                    pos.el.classList.add('dead');
+                    delete petPositions[studentId];
+                }
+                deathTimestamps[studentId] = frameCount;
+                if (selectedBattlePetIds.has(studentId)) {
+                    selectedBattlePetIds.delete(studentId);
+                    document.querySelectorAll('.pet-card.selected').forEach(el => el.classList.remove('selected'));
+                    updateAttributePanel();
+                }
+            }
+
+            function recordKill(attackerId, victimId) {
+                if (!battle.kills[attackerId]) battle.kills[attackerId] = [];
+                battle.kills[attackerId].push(victimId);
+            }
+
+            function resetBattleRound() {
+                battle.isActive = true;
+                battle.isGameOver = false;
+                battle.winnerGroup = null;
+                battle.round++;
+                deathTimestamps = {};
+                students.forEach(s => {
+                    battle.kills[s.id] = [];
+                    battle.status[s.id] = { regen: false, lifesteal: false, stunned: false };
+                });
+
+                students.forEach(s => {
+                    const hp = calcSubjectTotal(s);
+                    battle.hp[s.id] = hp;
+                    battle.maxHp[s.id] = hp;
+                    const totalGames = battle.records[s.id].totalGames;
+                    const staminaMax = getBattleStaminaMax(s);
+                    battle.stamina[s.id] = Math.max(0, staminaMax - totalGames);
+                    const manaMax = getBattleManaMax(s);
+                    battle.mana[s.id] = manaMax - battle.records[s.id].usedSkills;
+                    battle.isAlive[s.id] = true;
+                    battle.isStunned[s.id] = false;
+                    battle.stunTimer[s.id] = 0;
+                    battle.speedReduction[s.id] = 0;
+                    battle.lifestealActive[s.id] = false;
+                    battle.lifestealAmount[s.id] = 0;
+                    battle.attackTimer[s.id] = 0;
+                    battle.skillTimer[s.id] = 0;
+                    battle.regenTimer[s.id] = 0;
+                    battle.targetId[s.id] = null;
+                    battle.lastAttackTime[s.id] = 0;
+                });
+
+                const rect = park.getBoundingClientRect();
+                const w = park.clientWidth || rect.width || 600;
+                const h = park.clientHeight || rect.height || 400;
+                petPositions = {};
+                students.forEach(s => {
+                    if (!isEligibleForBattle(s)) {
+                        battle.isAlive[s.id] = false;
+                        return;
+                    }
+                    const subjectTotal = calcSubjectTotal(s);
+                    const size = getEmojiSize(subjectTotal);
+                    if (size === 0) {
+                        battle.isAlive[s.id] = false;
+                        return;
+                    }
+                    const cardW = Math.max(24, size * 0.8);
+                    const cardH = Math.max(32, size * 1.0);
+                    const card = createPetCard(s, size, cardW, cardH);
+                    park.appendChild(card);
+
+                    const x = Math.random() * (w - cardW);
+                    const y = Math.random() * (h - cardH);
+                    card.style.left = x + 'px';
+                    card.style.top = y + 'px';
+
+                    const speed = getSpeed(calcQuantTotal(s));
+                    const angle = Math.random() * 2 * Math.PI;
+                    petPositions[s.id] = {
+                        x, y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        el: card,
+                        w: cardW,
+                        h: cardH,
+                        groupName: s.groupName || '未分组',
+                    };
+                });
+
+                selectedBattlePetIds.clear();
+                document.querySelectorAll('.pet-card.selected').forEach(el => el.classList.remove('selected'));
+                attrPanel.classList.remove('visible');
+                updateStatPanel();
+                updateUI();
+                nextBtn.disabled = true;
+                statusText.textContent = '⚔️ 战斗中...';
+                if (petAnimId) cancelAnimationFrame(petAnimId);
+                petAnimId = requestAnimationFrame(updateBattle);
+            }
+
+            // ================================================================
+            //  战斗核心
+            // ================================================================
+            function handleCollision(p1, p2, id1, id2) {
+                const now = Date.now();
+                if (collisionTimers[id1] && now - collisionTimers[id1].lastTime < COLLISION_COOLDOWN) return;
+                if (collisionTimers[id2] && now - collisionTimers[id2].lastTime < COLLISION_COOLDOWN) return;
+
+                const r1 = p1.w * COLLISION_RADIUS_RATIO;
+                const r2 = p2.w * COLLISION_RADIUS_RATIO;
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > r1 + r2) return;
+
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                const overlap = (r1 + r2 - dist) / 2;
+                p1.x -= nx * overlap;
+                p1.y -= ny * overlap;
+                p2.x += nx * overlap;
+                p2.y += ny * overlap;
+
+                let v1n = p1.vx * nx + p1.vy * ny;
+                let v2n = p2.vx * nx + p2.vy * ny;
+                if (v1n > 0) {
+                    p1.vx -= 2 * v1n * nx;
+                    p1.vy -= 2 * v1n * ny;
+                }
+                if (v2n < 0) {
+                    p2.vx -= 2 * v2n * nx;
+                    p2.vy -= 2 * v2n * ny;
+                }
+
+                const s1 = students.find(s => s.id === id1);
+                const s2 = students.find(s => s.id === id2);
+                if (s1 && s1.animal) {
+                    const emoji = p1.el.querySelector('.pet-emoji');
+                    if (emoji) {
+                        const faces = ['💥', '😲', '😵', '✨'];
+                        const face = faces[Math.floor(Math.random() * faces.length)];
+                        emoji.textContent = face;
+                        if (collisionTimers[id1]) clearTimeout(collisionTimers[id1].timer);
+                        else collisionTimers[id1] = {};
+                        collisionTimers[id1].timer = setTimeout(() => {
+                            const emoji2 = p1.el.querySelector('.pet-emoji');
+                            if (emoji2 && s1.animal) emoji2.textContent = s1.animal;
+                            collisionTimers[id1].lastTime = 0;
+                            collisionTimers[id1].timer = null;
+                        }, 300);
+                        collisionTimers[id1].lastTime = now;
+                    }
+                }
+                if (s2 && s2.animal) {
+                    const emoji = p2.el.querySelector('.pet-emoji');
+                    if (emoji) {
+                        const faces = ['💥', '😲', '😵', '✨'];
+                        const face = faces[Math.floor(Math.random() * faces.length)];
+                        emoji.textContent = face;
+                        if (collisionTimers[id2]) clearTimeout(collisionTimers[id2].timer);
+                        else collisionTimers[id2] = {};
+                        collisionTimers[id2].timer = setTimeout(() => {
+                            const emoji2 = p2.el.querySelector('.pet-emoji');
+                            if (emoji2 && s2.animal) emoji2.textContent = s2.animal;
+                            collisionTimers[id2].lastTime = 0;
+                            collisionTimers[id2].timer = null;
+                        }, 300);
+                        collisionTimers[id2].lastTime = now;
+                    }
+                }
+
+                p1.el.classList.add('collision-pulse');
+                p2.el.classList.add('collision-pulse');
+                clearTimeout(p1.el._pulseTimer);
+                clearTimeout(p2.el._pulseTimer);
+                p1.el._pulseTimer = setTimeout(() => p1.el.classList.remove('collision-pulse'), 300);
+                p2.el._pulseTimer = setTimeout(() => p2.el.classList.remove('collision-pulse'), 300);
+            }
+
+            function performBattleAttack(attacker, target) {
+                const atk = getBattleAttack(attacker);
+                const def = getBattleDefense(target);
+                let damage = Math.max(0, atk - def);
+                if (damage === 0) return 0;
+
+                if (battle.lifestealActive[target.id]) {
+                    const healAmount = Math.min(damage, battle.lifestealAmount[target.id]);
+                    battle.hp[target.id] = Math.min(battle.maxHp[target.id], battle.hp[target.id] + healAmount);
+                    battle.lifestealActive[target.id] = false;
+                    battle.lifestealAmount[target.id] = 0;
+                    const tpos = petPositions[target.id];
+                    if (tpos) {
+                        showBattleDamage(tpos.x + tpos.w/2, tpos.y - 10, `+${healAmount}💚`, '#2ecc71');
+                    }
+                    return 0;
+                }
+
+                battle.hp[target.id] -= damage;
+                const tpos = petPositions[target.id];
+                if (tpos) {
+                    showBattleDamage(tpos.x + tpos.w/2, tpos.y - 10, `-${damage}❤️`, '#ff6b6b');
+                }
+
+                if (battle.hp[target.id] <= 0) {
+                    battle.hp[target.id] = 0;
+                    battle.isAlive[target.id] = false;
+                    recordKill(attacker.id, target.id);
+                    hideDeadPet(target.id);
+                    if (tpos) {
+                        showBattleDamage(tpos.x + tpos.w/2, tpos.y - 30, '💀 淘汰', '#ff0000');
+                    }
+                }
+                return damage;
+            }
+
+            function performSkill(attacker) {
+                const pos = petPositions[attacker.id];
+                if (!pos) return;
+                if (battle.mana[attacker.id] <= 0) return;
+
+                const skillChoice = Math.floor(Math.random() * 3) + 1;
+                battle.mana[attacker.id] -= 1;
+                battle.records[attacker.id].usedSkills += 1;
+                battle.skillTimer[attacker.id] = 0;
+
+                const skillNames = { 1: '💥 真实伤害', 2: '💚 吸血', 3: '🌀 控制' };
+                showSkillEffect(pos.x + pos.w/2, pos.y + pos.h/2 - 20, skillNames[skillChoice], '#ffd700');
+
+                switch(skillChoice) {
+                    case 1: {
+                        const trueDmg = getBattleTrueDamage(attacker);
+                        if (trueDmg > 0) {
+                            for (let other of students) {
+                                if (other.id === attacker.id) continue;
+                                if (other.onLeave) continue;
+                                if (!battle.isAlive[other.id]) continue;
+                                if (other.groupName === attacker.groupName) continue;
+                                if (!isEligibleForBattle(other)) continue;
+                                battle.hp[other.id] -= trueDmg;
+                                const opos = petPositions[other.id];
+                                if (opos) {
+                                    showBattleDamage(opos.x + opos.w/2, opos.y - 10, `-${trueDmg}💥`, '#ff6bff');
+                                }
+                                if (battle.hp[other.id] <= 0) {
+                                    battle.hp[other.id] = 0;
+                                    battle.isAlive[other.id] = false;
+                                    recordKill(attacker.id, other.id);
+                                    hideDeadPet(other.id);
+                                    if (opos) {
+                                        showBattleDamage(opos.x + opos.w/2, opos.y - 30, '💀 淘汰', '#ff0000');
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    case 2: {
+                        const lifestealAmount = getBattleLifesteal(attacker);
+                        if (lifestealAmount > 0) {
+                            battle.lifestealActive[attacker.id] = true;
+                            battle.lifestealAmount[attacker.id] = lifestealAmount;
+                            battle.status[attacker.id].lifesteal = true;
+                            showBattleDamage(pos.x + pos.w/2, pos.y - 20, `💚 吸血 +${lifestealAmount}`, '#2ecc71');
+                        }
+                        break;
+                    }
+                    case 3: {
+                        const controlVal = getBattleControl(attacker);
+                        if (controlVal > 0) {
+                            for (let other of students) {
+                                if (other.id === attacker.id) continue;
+                                if (other.onLeave) continue;
+                                if (!battle.isAlive[other.id]) continue;
+                                if (other.groupName === attacker.groupName) continue;
+                                if (!isEligibleForBattle(other)) continue;
+                                battle.speedReduction[other.id] = controlVal;
+                                const walkSpeed = other.cats[9] || 0;
+                                if (controlVal > walkSpeed) {
+                                    const stunTime = controlVal - walkSpeed;
+                                    battle.isStunned[other.id] = true;
+                                    battle.stunTimer[other.id] = stunTime * 60;
+                                    battle.status[other.id].stunned = true;
+                                    const opos = petPositions[other.id];
+                                    if (opos) {
+                                        showBattleDamage(opos.x + opos.w/2, opos.y - 30, `💫 定身 ${stunTime}s`, '#00bfff');
+                                    }
+                                } else {
+                                    const opos = petPositions[other.id];
+                                    if (opos) {
+                                        showBattleDamage(opos.x + opos.w/2, opos.y - 20, `🐢 减速 ${controlVal}`, '#87ceeb');
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // ---- 锁敌逻辑：优先同号，其次血量最低 ----
+            function findBestTarget(student) {
+                const myGroup = student.groupName || '未分组';
+                const myOrder = student.seatOrder || 0;
+                let best = null;
+                let bestScore = Infinity;
+                const pos = petPositions[student.id];
+                if (!pos) return null;
+
+                // 第一步：寻找同号敌人
+                let sameOrderTargets = [];
+                for (let other of students) {
+                    if (other.id === student.id) continue;
+                    if (other.onLeave) continue;
+                    if (!battle.isAlive[other.id]) continue;
+                    if (other.groupName === myGroup) continue;
+                    if (!isEligibleForBattle(other)) continue;
+                    const opos = petPositions[other.id];
+                    if (!opos) continue;
+                    const dx = pos.x - opos.x;
+                    const dy = pos.y - opos.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    // 放宽距离限制，只要在视野内（CHASE_RANGE * 3）都考虑
+                    if (dist > CHASE_RANGE * 3) continue;
+                    if ((other.seatOrder || 0) === myOrder && myOrder !== 0) {
+                        sameOrderTargets.push({ other, dist, hpRatio: battle.hp[other.id] / battle.maxHp[other.id] });
+                    }
+                }
+                if (sameOrderTargets.length > 0) {
+                    // 在同号中选血量最低的（更激进），或最近的（形成战团）。这里选最近的，以便聚团。
+                    sameOrderTargets.sort((a, b) => a.dist - b.dist);
+                    return sameOrderTargets[0].other;
+                }
+
+                // 第二步：没有同号，则选择血量百分比最低的（原有逻辑）
+                for (let other of students) {
+                    if (other.id === student.id) continue;
+                    if (other.onLeave) continue;
+                    if (!battle.isAlive[other.id]) continue;
+                    if (other.groupName === myGroup) continue;
+                    if (!isEligibleForBattle(other)) continue;
+                    const opos = petPositions[other.id];
+                    if (!opos) continue;
+                    const dx = pos.x - opos.x;
+                    const dy = pos.y - opos.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > CHASE_RANGE * 3) continue; // 放宽
+                    const hpRatio = battle.hp[other.id] / battle.maxHp[other.id];
+                    if (hpRatio < bestScore) {
+                        bestScore = hpRatio;
+                        best = other;
+                    }
+                }
+                // 如果还没有目标，放宽到所有敌方（不限制距离）
+                if (!best) {
+                    for (let other of students) {
+                        if (other.id === student.id) continue;
+                        if (other.onLeave) continue;
+                        if (!battle.isAlive[other.id]) continue;
+                        if (other.groupName === myGroup) continue;
+                        if (!isEligibleForBattle(other)) continue;
+                        const opos = petPositions[other.id];
+                        if (!opos) continue;
+                        const hpRatio = battle.hp[other.id] / battle.maxHp[other.id];
+                        if (hpRatio < bestScore) {
+                            bestScore = hpRatio;
+                            best = other;
+                        }
+                    }
+                }
+                return best;
+            }
+
+            // ================================================================
+            //  主循环
+            // ================================================================
+            function updateBattle() {
+                if (!battle.isActive || battle.isGameOver) {
+                    petAnimId = requestAnimationFrame(updateBattle);
+                    return;
+                }
+                frameCount++;
+
+                const rect = park.getBoundingClientRect();
+                const w = park.clientWidth || rect.width || 600;
+                const h = park.clientHeight || rect.height || 400;
+
+                // 1. 回血
+                for (let s of students) {
+                    if (!battle.isAlive[s.id]) continue;
+                    if (!isEligibleForBattle(s)) continue;
+                    battle.regenTimer[s.id] = (battle.regenTimer[s.id] || 0) + 1;
+                    if (battle.regenTimer[s.id] >= REGEN_INTERVAL) {
+                        battle.regenTimer[s.id] = 0;
+                        const regen = getBattleRegen(s);
+                        if (regen > 0) {
+                            battle.hp[s.id] = Math.min(battle.maxHp[s.id], battle.hp[s.id] + regen);
+                            const pos = petPositions[s.id];
+                            if (pos) {
+                                showBattleDamage(pos.x + pos.w/2, pos.y - 20, `+${regen}💚`, '#2ecc71');
+                            }
+                        }
+                    }
+                }
+
+                // 2. AI行动
+                for (let s of students) {
+                    if (!battle.isAlive[s.id]) continue;
+                    if (!isEligibleForBattle(s)) continue;
+                    const pos = petPositions[s.id];
+                    if (!pos) continue;
+
+                    if (battle.stamina[s.id] <= 0) continue;
+
+                    // 定身处理
+                    if (battle.isStunned[s.id]) {
+                        battle.stunTimer[s.id]--;
+                        if (battle.stunTimer[s.id] <= 0) {
+                            battle.isStunned[s.id] = false;
+                            battle.speedReduction[s.id] = 0;
+                            battle.status[s.id].stunned = false;
+                        }
+                        continue;
+                    }
+
+                    if (battle.speedReduction[s.id] > 0) {
+                        battle.speedReduction[s.id] = Math.max(0, battle.speedReduction[s.id] - 0.2);
+                    }
+
+                    const hpRatio = battle.hp[s.id] / battle.maxHp[s.id];
+                    const target = findBestTarget(s); // 优化后
+                    if (target) {
+                        const tpos = petPositions[target.id];
+                        if (tpos) {
+                            const dx = tpos.x - pos.x;
+                            const dy = tpos.y - pos.y;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            const speed = getBattleSpeed(s);
+
+                            let moveX = 0, moveY = 0;
+                            if (hpRatio < ESCAPE_THRESHOLD && dist < ESCAPE_DIST) {
+                                if (speed > 0) {
+                                    const angle = Math.atan2(dy, dx) + Math.PI;
+                                    moveX = Math.cos(angle) * speed;
+                                    moveY = Math.sin(angle) * speed;
+                                }
+                            } else if (hpRatio < CAUTIOUS_THRESHOLD && dist < ATTACK_RANGE) {
+                                if (speed > 0) {
+                                    const angle = Math.atan2(dy, dx) + Math.PI;
+                                    moveX = Math.cos(angle) * speed * 0.6;
+                                    moveY = Math.sin(angle) * speed * 0.6;
+                                }
+                            } else {
+                                if (dist > ATTACK_RANGE) {
+                                    if (speed > 0) {
+                                        const angle = Math.atan2(dy, dx);
+                                        moveX = Math.cos(angle) * speed;
+                                        moveY = Math.sin(angle) * speed;
+                                    }
+                                }
+                                if (dist < CHASE_RANGE && hpRatio >= ESCAPE_THRESHOLD) {
+                                    battle.attackTimer[s.id] = (battle.attackTimer[s.id] || 0) + 1;
+                                    if (battle.attackTimer[s.id] >= ATTACK_COOLDOWN) {
+                                        battle.attackTimer[s.id] = 0;
+                                        battle.stamina[s.id] -= 1;
+                                        performBattleAttack(s, target);
+                                    }
+                                }
+                            }
+
+                            if (moveX !== 0 || moveY !== 0) {
+                                const targetVx = moveX;
+                                const targetVy = moveY;
+                                pos.vx = pos.vx * (1 - SMOOTH_FACTOR) + targetVx * SMOOTH_FACTOR;
+                                pos.vy = pos.vy * (1 - SMOOTH_FACTOR) + targetVy * SMOOTH_FACTOR;
+                            } else {
+                                pos.vx *= 0.9;
+                                pos.vy *= 0.9;
+                                if (Math.abs(pos.vx) < 0.01) pos.vx = 0;
+                                if (Math.abs(pos.vy) < 0.01) pos.vy = 0;
+                            }
+
+                            pos.x += pos.vx;
+                            pos.y += pos.vy;
+                            pos.x = Math.max(0, Math.min(w - pos.w, pos.x));
+                            pos.y = Math.max(0, Math.min(h - pos.h, pos.y));
+                            pos.el.style.left = pos.x + 'px';
+                            pos.el.style.top = pos.y + 'px';
+                        }
+                    } else {
+                        // 无目标：减速停止
+                        pos.vx *= 0.95;
+                        pos.vy *= 0.95;
+                        if (Math.abs(pos.vx) < 0.01) pos.vx = 0;
+                        if (Math.abs(pos.vy) < 0.01) pos.vy = 0;
+                        pos.x += pos.vx;
+                        pos.y += pos.vy;
+                        pos.x = Math.max(0, Math.min(w - pos.w, pos.x));
+                        pos.y = Math.max(0, Math.min(h - pos.h, pos.y));
+                        pos.el.style.left = pos.x + 'px';
+                        pos.el.style.top = pos.y + 'px';
+                    }
+                }
+
+                // 3. 碰撞
+                const ids = Object.keys(petPositions);
+                for (let i = 0; i < ids.length; i++) {
+                    for (let j = i + 1; j < ids.length; j++) {
+                        const id1 = parseInt(ids[i]);
+                        const id2 = parseInt(ids[j]);
+                        const p1 = petPositions[id1];
+                        const p2 = petPositions[id2];
+                        if (!p1 || !p2) continue;
+                        const s1 = students.find(s => s.id === id1);
+                        const s2 = students.find(s => s.id === id2);
+                        if (!s1 || !s2) continue;
+                        if (!battle.isAlive[id1] || !battle.isAlive[id2]) continue;
+                        if (s1.groupName === s2.groupName && s1.groupName !== '未分组') continue;
+                        handleCollision(p1, p2, id1, id2);
+                    }
+                }
+
+                // 4. 技能释放
+                for (let s of students) {
+                    if (!battle.isAlive[s.id]) continue;
+                    if (!isEligibleForBattle(s)) continue;
+                    battle.skillTimer[s.id] = (battle.skillTimer[s.id] || 0) + 1;
+                    if (battle.skillTimer[s.id] >= SKILL_COOLDOWN) {
+                        if (battle.mana[s.id] > 0) {
+                            performSkill(s);
+                        } else {
+                            battle.skillTimer[s.id] = SKILL_COOLDOWN - 10;
+                        }
+                    }
+                }
+
+                // 5. 更新UI
+                updateUI();
+
+                // 6. 胜负
+                const winner = checkWinner();
+                if (winner) {
+                    battle.isGameOver = true;
+                    battle.winnerGroup = winner;
+                    battle.isActive = false;
+                    students.forEach(s => {
+                        if (battle.isAlive[s.id] && s.groupName === winner) {
+                            battle.records[s.id].totalGames += 1;
+                        } else if (battle.isAlive[s.id]) {
+                            battle.records[s.id].totalGames += 1;
+                        }
+                    });
+                    statusText.textContent = `🏆 ${winner} 获胜！`;
+                    const banner = document.createElement('div');
+                    banner.className = 'battle-status';
+                    banner.innerHTML = `<div class="winner">🏆 ${winner} 获胜！</div><div class="sub">点击「下一局」继续</div>`;
+                    banner.style.pointerEvents = 'none';
+                    park.appendChild(banner);
+                    nextBtn.disabled = false;
+                    showToast(`🏆 ${winner} 获胜！点击「下一局」继续`);
+                }
+
+                petAnimId = requestAnimationFrame(updateBattle);
+            }
+
+            function checkWinner() {
+                const groups = {};
+                for (let s of students) {
+                    if (s.onLeave) continue;
+                    if (!battle.isAlive[s.id]) continue;
+                    if (!isEligibleForBattle(s)) continue;
+                    const gName = s.groupName || '未分组';
+                    if (!groups[gName]) groups[gName] = 0;
+                    groups[gName]++;
+                }
+                const aliveGroups = Object.keys(groups);
+                if (aliveGroups.length === 1 && groups[aliveGroups[0]] > 0) {
+                    return aliveGroups[0];
+                }
+                return null;
+            }
+
+            // ================================================================
+            //  UI更新
+            // ================================================================
+            function updateUI() {
+                let alive = 0;
+                students.forEach(s => {
+                    if (battle.isAlive[s.id]) alive++;
+                });
+                playerCountEl.textContent = `👤 ${alive}`;
+                roundCountEl.textContent = `🔄 第 ${battle.round} 局`;
+                students.forEach(s => {
+                    const hpBar = document.getElementById('hp_' + s.id);
+                    if (hpBar && battle.isAlive[s.id]) {
+                        const pct = Math.max(0, (battle.hp[s.id] / battle.maxHp[s.id]) * 100);
+                        hpBar.style.width = pct + '%';
+                        hpBar.style.background = pct > 50 ? '#2ecc71' : pct > 25 ? '#f1c40f' : '#e74c3c';
+                    }
+                    const manaBar = document.getElementById('mana_' + s.id);
+                    if (manaBar && battle.isAlive[s.id]) {
+                        const maxMana = getBattleManaMax(s) || 1;
+                        const pct = Math.max(0, (battle.mana[s.id] / maxMana) * 100);
+                        manaBar.style.width = pct + '%';
+                    }
+                    const pos = petPositions[s.id];
+                    if (pos && pos.el && battle.isAlive[s.id]) {
+                        let stunIcon = pos.el.querySelector('.stun-icon');
+                        if (battle.isStunned[s.id]) {
+                            if (!stunIcon) {
+                                const icon = document.createElement('div');
+                                icon.className = 'stun-icon';
+                                icon.textContent = '💫';
+                                pos.el.appendChild(icon);
+                            }
+                        } else {
+                            if (stunIcon) stunIcon.remove();
+                        }
+                    }
+                });
+                updateStatPanel();
+                selectedBattlePetIds.forEach(id => {
+                    const s = students.find(st => st.id === id);
+                    if (!s || !battle.isAlive[id]) {
+                        selectedBattlePetIds.delete(id);
+                        document.querySelectorAll('.pet-card.selected').forEach(el => {
+                            if (parseInt(el.dataset.studentId) === id) el.classList.remove('selected');
+                        });
+                    }
+                });
+                updateAttributePanel();
+            }
+
+            // ================================================================
+            //  Toast & 下一局
+            // ================================================================
+            function showToast(text) {
+                const toast = document.getElementById('floatToast');
+                toast.textContent = text;
+                toast.className = 'float-toast show';
+                setTimeout(() => {
+                    toast.className = 'float-toast hide';
+                    setTimeout(() => { toast.className = 'float-toast'; }, 600);
+                }, 1500);
+            }
+
+            function nextRound() {
+                if (!battle.isGameOver) return;
+                const banner = park.querySelector('.battle-status');
+                if (banner) banner.remove();
+                park.querySelectorAll('.pet-card').forEach(el => el.remove());
+                resetBattleRound();
+                if (petAnimId) cancelAnimationFrame(petAnimId);
+                petAnimId = requestAnimationFrame(updateBattle);
+            }
+
+            // ================================================================
+            //  启动
+            // ================================================================
+            function init() {
+                const ok = loadStudents();
+                if (!ok || students.length === 0) {
+                    park.innerHTML = '<div style="color:#888;font-size:18px;margin-top:50px;text-align:center;">暂无学生数据，请先到座次表导入</div>';
+                    return;
+                }
+                students = students.filter(s => !s.onLeave && calcSubjectTotal(s) > 0);
+                if (students.length === 0) {
+                    park.innerHTML = '<div style="color:#888;font-size:18px;margin-top:50px;text-align:center;">没有符合条件的学生</div>';
+                    return;
+                }
+                initBattleRecords();
+                nextBtn.addEventListener('click', nextRound);
+                park.addEventListener('click', function(e) {
+                    if (e.target === park || e.target.closest('.pet-park') === park) {
+                        document.querySelectorAll('.pet-card.selected').forEach(el => el.classList.remove('selected'));
+                        selectedBattlePetIds.clear();
+                        attrPanel.classList.remove('visible');
+                    }
+                });
+                resetBattleRound();
+                updateStatPanel();
+            }
+
+            window.battle = battle;
+            window.nextRound = nextRound;
+            init();
+
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1205 @@
+<!-- 班级管理系统 | Copyright (c) 2026 黄迁胜 | 根据 MIT 许可证授权 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <title>🏃 体测数据管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #0b1a2a; color: #fff; padding: 12px; }
+        .app { width: 95vw; max-width: 95vw; margin: 0 auto; background: rgba(255,255,255,0.04); border-radius: 24px; padding: 16px 20px 20px; border: 1px solid rgba(255,255,255,0.06); }
+        .header { display: flex; justify-content: flex-start; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .header h1 { font-size: 24px; background: linear-gradient(135deg, #f7971e, #ffd200); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: #fff; padding: 6px 16px; border-radius: 30px; cursor: pointer; transition: 0.2s; font-size: 14px; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-primary { background: #6c5ce7; border-color: #6c5ce7; color: #fff; }
+        .btn-export { background: rgba(52,152,219,0.3); border-color: #3498db; color: #fff; }
+        .btn-import { background: rgba(243,156,18,0.3); border-color: #f39c12; color: #fff; }
+        .btn-sync { background: rgba(46,204,113,0.3); border-color: #2ecc71; color: #fff; }
+        .btn-art { background: rgba(155,89,182,0.4); border-color: #9b59b6; color: #fff; }
+        .btn-danger { background: rgba(231,76,60,0.3); border-color: #e74c3c; color: #fff; }
+        .back-link { margin-left: auto; color: #6c5ce7; text-decoration: none; font-weight: 500; display: flex; align-items: center; }
+        .back-link img { width: 40px; height: 40px; }
+
+        /* ★ 外层滚动容器：图表 + 表格横向一起滚动。
+           注意：去掉 max-height，让表格贯通到底。 */
+        .scroll-area {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.02);
+        }
+        
+        /* 图表表格 和 数据表格 共享相同的列宽 CSS */
+        .charts-table, .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 800px;
+        }
+        
+        /* 图表表格 */
+        .charts-table {
+            background: rgba(0,0,0,0.3);
+        }
+        .charts-table th {
+            padding: 6px 4px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 2px solid rgba(255,215,0,0.25);
+            background: rgba(0,0,0,0.35);
+            color: #ccc;
+            font-weight: 400;
+            font-size: 12px;
+            height: 82px;
+        }
+        .charts-table th.empty-cell {
+            background: rgba(0,0,0,0.35);
+        }
+
+        /* 数据表格 */
+        .data-table th, .data-table td {
+            border: 1px solid rgba(255,255,255,0.06);
+            padding: 6px 8px;
+            text-align: center;
+            font-size: 14px;
+            overflow: hidden;
+        }
+        .data-table thead th {
+            background: rgba(0,0,0,0.4);
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .col-index { background: rgba(0,0,0,0.4); color: #ffd700; font-weight: 700; cursor: default !important; }
+        /* ★ 序号列可点击 */
+        .col-index.clickable { cursor: pointer !important; transition: 0.15s; }
+        .col-index.active {
+            background: rgba(255,215,0,0.35) !important;
+            color: #fff !important;
+            box-shadow: inset 0 0 0 2px #ffd700;
+            font-weight: 900;
+        }
+        
+        .col-del { background: rgba(0,0,0,0.4); cursor: default !important; }
+        .col-art { background: rgba(155,89,182,0.25); color: #d7b3f0; font-weight: 700; }
+        .art-score-cell { background: rgba(155,89,182,0.12); font-weight: 700; color: #d7b3f0; font-size: 15px; }
+        
+        .del-row-btn {
+            background: rgba(231,76,60,0.2);
+            border: 1px solid rgba(231,76,60,0.4);
+            color: #ff6b6b;
+            border-radius: 6px;
+            padding: 2px 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.15s;
+        }
+        
+        .male { color: #3498db; }
+        .female { color: #e84393; }
+        .editable { cursor: text; }
+        
+        .editable input { width: 100%; max-width: 100%; background: transparent; border: none; color: inherit; text-align: center; font-size: inherit; outline: none; box-sizing: border-box; -moz-appearance: textfield; }
+        .editable input::-webkit-inner-spin-button, .editable input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .grade-excellent { background-color: rgba(231, 76, 60, 0.6) !important; color: #fff; }
+        .grade-good { background-color: rgba(241, 196, 15, 0.6) !important; color: #fff; }
+        .grade-pass { background-color: rgba(46, 204, 113, 0.6) !important; color: #fff; }
+        .grade-fail { background-color: rgba(52, 152, 219, 0.6) !important; color: #fff; }
+
+        /* 图表 */
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        .chart-svg {
+            width: 54px;
+            height: 54px;
+            display: block;
+        }
+        .chart-label {
+            font-size: 9px;
+            color: #ccc;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            display: flex;
+            gap: 3px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .chart-label span {
+            font-weight: 600;
+        }
+        .chart-empty {
+            font-size: 9px;
+            color: #666;
+        }
+
+        body:not(.touch-device) .btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.02); }
+        body:not(.touch-device) .btn-primary:hover { background: #5a4bd1; }
+        body:not(.touch-device) .btn-export:hover { background: #3498db; }
+        body:not(.touch-device) .btn-import:hover { background: #f39c12; }
+        body:not(.touch-device) .btn-sync:hover { background: #2ecc71; }
+        body:not(.touch-device) .btn-art:hover { background: #9b59b6; }
+        body:not(.touch-device) .btn-danger:hover { background: #e74c3c; }
+        body:not(.touch-device) .data-table thead th:hover { background: rgba(255,255,255,0.1); }
+        body:not(.touch-device) .col-art:hover { background: rgba(155,89,182,0.4); }
+        body:not(.touch-device) .col-index.clickable:hover { background: rgba(255,215,0,0.15); }
+        body:not(.touch-device) .del-row-btn:hover { background: #e74c3c; color: #fff; }
+        body:not(.touch-device) .editable:hover { background: rgba(255,255,255,0.08); }
+        body:not(.touch-device) .project-item .actions button:hover { color: #fff; }
+        body:not(.touch-device) .project-item .actions .edit-btn:hover { color: #ffd700; }
+        body:not(.touch-device) .project-item .actions .del-btn:hover { color: #e74c3c; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #1a2a3a; border-radius: 16px; padding: 20px; width: 90%; max-width: 700px; border: 1px solid rgba(255,215,0,0.3); max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin-bottom: 12px; color: #ffd700; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 6px 10px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 8px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+        
+        .project-list { margin-bottom: 12px; }
+        .project-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: rgba(255,255,255,0.04); border-radius: 8px; margin-bottom: 6px; }
+        .project-item .info { flex: 1; font-size: 14px; }
+        .project-item .actions button { background: transparent; border: none; color: #aaa; font-size: 14px; cursor: pointer; margin-left: 8px; }
+        .edit-area { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px; margin-top: 12px; }
+        
+        .gender-group { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; margin-bottom: 12px; background: rgba(255,255,255,0.03); }
+        .gender-group-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: #fff; }
+        .gender-group.male-group .gender-group-title { color: #3498db; }
+        .gender-group.female-group .gender-group-title { color: #e84393; }
+        .form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+        .grade-score-setting {
+            background: rgba(155,89,182,0.15);
+            border: 1px solid rgba(155,89,182,0.4);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        .grade-score-setting h4 { font-size: 15px; color: #d7b3f0; margin-bottom: 8px; }
+        .grade-score-setting .form-row { grid-template-columns: repeat(4, 1fr); }
+        .grade-score-setting .tip { font-size: 12px; color: #aaa; margin-top: 6px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <h1>🏃 体测数据管理</h1>
+            <div class="btn-group">
+                <button class="btn btn-sync" onclick="syncFromSeat()" title="从座次表同步学生姓名（保留已有成绩）">🔄 同步座次表姓名</button>
+                <button class="btn btn-sync" onclick="syncArtScoresToSeat()" title="把艺体汇总分累加到座次表的艺体项">🎯 同步艺体分到座次表</button>
+                <button class="btn btn-primary" onclick="openProjectModal()">⚙️ 管理项目</button>
+                <button class="btn btn-export" onclick="exportCSV()">📤 导出CSV</button>
+                <button class="btn btn-export" onclick="exportJSON()">📤 导出JSON备份</button>
+                <button class="btn btn-import" onclick="document.getElementById('fileInput').click()">📥 一键导入</button>
+                <input type="file" id="fileInput" accept=".csv,.json" style="display:none;" onchange="handleImport(event)">
+            </div>
+            <a href="home.html" class="back-link"><img src="logo.svg" alt="logo"></a>
+        </div>
+
+        <!-- ★ 图表 + 数据表 共用一个横向滚动容器 -->
+        <div class="scroll-area">
+            <!-- 图表表格（表格外面，独立） -->
+            <table class="charts-table">
+                <colgroup id="chartsColgroup"></colgroup>
+                <thead><tr id="chartsRow"></tr></thead>
+            </table>
+            <!-- 数据表格 -->
+            <table class="data-table" id="fitnessTable">
+                <colgroup id="dataColgroup"></colgroup>
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="projectModal">
+        <div class="modal-box">
+            <h3>📋 管理项目</h3>
+            
+            <div class="grade-score-setting">
+                <h4>⚖️ 等级得分设置（影响"艺体汇总"）</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>优秀</label>
+                        <input type="number" id="scoreExcellent" step="0.5" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label>良好</label>
+                        <input type="number" id="scoreGood" step="0.5" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label>合格</label>
+                        <input type="number" id="scorePass" step="0.5" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>不合格</label>
+                        <input type="number" id="scoreFail" step="0.5" value="0">
+                    </div>
+                </div>
+                <div class="tip">💡 这些分数会自动累加形成"艺体汇总"，同步到座次表时也使用此分数。</div>
+            </div>
+
+            <div class="project-list" id="projectListContainer"></div>
+            <div class="edit-area">
+                <h4 id="editAreaTitle" style="color:#aaa; margin-bottom:8px;">➕ 新增项目</h4>
+                <input type="hidden" id="editProjectId">
+                <div class="form-group">
+                    <label>项目名称</label>
+                    <input type="text" id="projectName" placeholder="如：50米跑">
+                </div>
+                <div class="gender-group male-group">
+                    <div class="gender-group-title">👦 男生标准</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>合格线</label>
+                            <input type="number" id="projectPassMale" placeholder="合格标准">
+                        </div>
+                        <div class="form-group">
+                            <label>良好线</label>
+                            <input type="number" id="projectGoodMale" placeholder="良好标准">
+                        </div>
+                        <div class="form-group">
+                            <label>优秀线</label>
+                            <input type="number" id="projectExcellentMale" placeholder="优秀标准">
+                        </div>
+                    </div>
+                </div>
+                <div class="gender-group female-group">
+                    <div class="gender-group-title">👧 女生标准</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>合格线</label>
+                            <input type="number" id="projectPassFemale" placeholder="合格标准">
+                        </div>
+                        <div class="form-group">
+                            <label>良好线</label>
+                            <input type="number" id="projectGoodFemale" placeholder="良好标准">
+                        </div>
+                        <div class="form-group">
+                            <label>优秀线</label>
+                            <input type="number" id="projectExcellentFemale" placeholder="优秀标准">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>排序方向（备注用，不影响表格点击排序）</label>
+                    <select id="projectDirection">
+                        <option value="desc">数值越大越好（如跳绳）</option>
+                        <option value="asc">数值越小越好（如跑步）</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-danger" id="deleteProjectBtn" style="display:none;" onclick="deleteProject()">🗑️ 删除</button>
+                    <button class="btn" onclick="closeProjectModal()">关闭</button>
+                    <button class="btn btn-primary" onclick="saveProject()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dataManager.js"></script>
+    <script>
+        // ============================================================
+        //  ★ 触摸检测
+        // ============================================================
+        (function() {
+            function markTouchDevice() {
+                document.body.classList.add('touch-device');
+                document.removeEventListener('touchstart', markTouchDevice);
+                document.removeEventListener('pointerdown', markTouchDevice);
+            }
+            document.addEventListener('touchstart', markTouchDevice, { passive: true, once: true });
+            document.addEventListener('pointerdown', function(e) {
+                if (e.pointerType === 'touch') markTouchDevice();
+            }, { passive: true });
+        })();
+
+        // ============================================================
+        //  通用：同步得分到座次表某一维
+        // ============================================================
+        function syncToDimension(dimensionIndex, dimensionName, scores) {
+            if (!scores || scores.length === 0) {
+                alert('没有可同步的数据。');
+                return { success: 0, unmatched: [] };
+            }
+
+            const classData = DataManager.loadClassData(CURRENT_CLASS);
+            if (!classData || !classData.students || classData.students.length === 0) {
+                alert('座次表里没有学生数据，无法同步。');
+                return { success: 0, unmatched: [] };
+            }
+
+            let successCount = 0;
+            const unmatched = [];
+            const detailLines = [];
+
+            scores.forEach(item => {
+                const delta = parseFloat(item.delta) || 0;
+                if (delta === 0) return;
+
+                const target = classData.students.find(s => s.name === item.name);
+                if (!target) {
+                    unmatched.push(item.name);
+                    return;
+                }
+
+                if (!target.cats || target.cats.length < 10) {
+                    target.cats = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                }
+                target.cats[dimensionIndex] = (target.cats[dimensionIndex] || 0) + delta;
+
+                successCount++;
+                detailLines.push(`${item.name} +${delta}`);
+            });
+
+            if (successCount === 0) {
+                alert(`没有可同步的分数（可能所有学生都无成绩，或姓名不匹配）。`);
+                return { success: 0, unmatched };
+            }
+
+            DataManager.saveClassData(classData, CURRENT_CLASS);
+
+            let msg = `✅ 已同步到座次表的"${dimensionName}"！\n\n`;
+            msg += `📊 同步人数：${successCount} 人\n`;
+            if (detailLines.length <= 20) {
+                msg += `\n${detailLines.join('\n')}`;
+            } else {
+                msg += `\n${detailLines.slice(0, 20).join('\n')}\n...等共 ${detailLines.length} 人`;
+            }
+            if (unmatched.length > 0) {
+                msg += `\n\n⚠️ 未匹配到（${unmatched.length} 人）：\n`;
+                msg += unmatched.slice(0, 10).join('、');
+                if (unmatched.length > 10) msg += ` 等...`;
+                msg += `\n（这些姓名在座次表里不存在，请检查）`;
+            }
+            alert(msg);
+
+            return { success: successCount, unmatched };
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const CURRENT_CLASS = params.get('classId') || params.get('class') || localStorage.getItem('currentClassId') || '一班';
+
+        const CONFIG_KEY = 'fitnessConfig_' + CURRENT_CLASS;
+        const ROWS_KEY = 'fitnessRows_' + CURRENT_CLASS;
+        const GRADE_SCORES_KEY = 'fitnessGradeScores_' + CURRENT_CLASS;
+
+        let rows = [];
+        let configs = [];
+        let gradeScores = { excellent: 3, good: 2, pass: 1, fail: 0 };
+        let lastSortField = null;
+        let lastSortDirection = 1;
+        let activeRowIndex = -1; // ★ 当前被激活的行序号（-1 表示无）
+
+        function loadConfigs() {
+            try { configs = JSON.parse(localStorage.getItem(CONFIG_KEY) || '[]'); } catch(e) { configs = []; }
+            if (configs.length === 0) {
+                configs = [
+                    { name: '50米跑', passMale: 9.0, goodMale: 8.0, excellentMale: 7.0, passFemale: 10.0, goodFemale: 9.0, excellentFemale: 8.0, direction: 'asc' },
+                    { name: '跳绳', passMale: 80, goodMale: 120, excellentMale: 150, passFemale: 90, goodFemale: 130, excellentFemale: 160, direction: 'desc' }
+                ];
+                saveConfigs();
+            } else {
+                let needSave = false;
+                configs.forEach(c => {
+                    if (c.pass !== undefined && c.passMale === undefined) {
+                        c.passMale = c.pass; c.goodMale = c.good; c.excellentMale = c.excellent;
+                        c.passFemale = c.pass; c.goodFemale = c.good; c.excellentFemale = c.excellent;
+                        needSave = true;
+                    }
+                });
+                if (needSave) saveConfigs();
+            }
+        }
+        function saveConfigs() { localStorage.setItem(CONFIG_KEY, JSON.stringify(configs)); }
+
+        function loadGradeScores() {
+            try {
+                const saved = localStorage.getItem(GRADE_SCORES_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data && typeof data === 'object') {
+                        gradeScores = { ...gradeScores, ...data };
+                    }
+                }
+            } catch(e) {}
+        }
+        function saveGradeScores() {
+            localStorage.setItem(GRADE_SCORES_KEY, JSON.stringify(gradeScores));
+        }
+
+        function loadRows() {
+            const saved = localStorage.getItem(ROWS_KEY);
+            if (saved) {
+                try { rows = JSON.parse(saved); } catch(e) { rows = []; }
+            } else {
+                rows = getSeatStudents().map(s => ({
+                    name: s.name,
+                    gender: s.gender || '男',
+                    height: '', weight: '', bmi: ''
+                }));
+                saveRows();
+            }
+            rows.forEach(r => {
+                if (!r.gender) r.gender = '男';
+                if (r.height === undefined) r.height = '';
+                if (r.weight === undefined) r.weight = '';
+                if (r.bmi === undefined) r.bmi = '';
+            });
+        }
+        function saveRows() { localStorage.setItem(ROWS_KEY, JSON.stringify(rows)); }
+
+        function getSeatStudents() {
+            const classData = DataManager.loadClassData(CURRENT_CLASS);
+            return classData && classData.students ? classData.students.filter(s => !s.onLeave) : [];
+        }
+
+        function syncFromSeat() {
+            const seatStudents = getSeatStudents();
+            if (seatStudents.length === 0) {
+                alert('座次表中没有学生，请先到座次表页面添加。');
+                return;
+            }
+            let addedCount = 0;
+            let keptCount = 0;
+            const existingNames = new Set(rows.map(r => r.name));
+            seatStudents.forEach(s => {
+                if (existingNames.has(s.name)) {
+                    keptCount++;
+                } else {
+                    rows.push({ name: s.name, gender: s.gender || '男', height: '', weight: '', bmi: '' });
+                    addedCount++;
+                }
+            });
+            saveRows(); renderTable();
+            alert(`🔄 同步完成！\n\n➕ 新增：${addedCount} 人\n✔️ 已存在（成绩保留）：${keptCount} 人\n📊 当前表格共 ${rows.length} 人`);
+        }
+
+        function syncArtScoresToSeat() {
+            if (rows.length === 0) {
+                alert('体测表里没有学生，无法同步。');
+                return;
+            }
+            const scores = rows.map(r => ({
+                name: r.name,
+                delta: calcArtScore(r)
+            }));
+            syncToDimension(2, '艺体', scores);
+        }
+
+        function getGradeLevel(value, config, gender) {
+            if (value === '' || value === null || value === undefined || isNaN(value)) return null;
+            const num = parseFloat(value);
+            const pass = gender === '女' ? config.passFemale : config.passMale;
+            const good = gender === '女' ? config.goodFemale : config.goodMale;
+            const excellent = gender === '女' ? config.excellentFemale : config.excellentMale;
+            if (pass === undefined || good === undefined || excellent === undefined) return null;
+            if (config.direction === 'asc') {
+                if (num <= excellent) return 'excellent';
+                else if (num <= good) return 'good';
+                else if (num <= pass) return 'pass';
+                else return 'fail';
+            } else {
+                if (num >= excellent) return 'excellent';
+                else if (num >= good) return 'good';
+                else if (num >= pass) return 'pass';
+                else return 'fail';
+            }
+        }
+
+        function getGradeClass(value, config, gender) {
+            const level = getGradeLevel(value, config, gender);
+            if (level === 'excellent') return 'grade-excellent';
+            if (level === 'good') return 'grade-good';
+            if (level === 'pass') return 'grade-pass';
+            if (level === 'fail') return 'grade-fail';
+            return '';
+        }
+
+        function calcArtScore(r) {
+            let total = 0;
+            configs.forEach((config, idx) => {
+                const value = r['proj_' + idx];
+                const level = getGradeLevel(value, config, r.gender);
+                if (level && gradeScores[level] !== undefined) {
+                    total += parseFloat(gradeScores[level]) || 0;
+                }
+            });
+            return Math.round(total * 10) / 10;
+        }
+
+        // ============================================================
+        //  统计：某个项目的等级分布
+        // ============================================================
+        function calcProjectStats(configIdx) {
+            const config = configs[configIdx];
+            const stats = { excellent: 0, good: 0, pass: 0, fail: 0, total: 0 };
+            rows.forEach(r => {
+                const value = r['proj_' + configIdx];
+                const level = getGradeLevel(value, config, r.gender);
+                if (level) {
+                    stats[level]++;
+                    stats.total++;
+                }
+            });
+            return stats;
+        }
+
+        // ============================================================
+        //  生成环形图 HTML（SVG）
+        // ============================================================
+        function makeDonutHTML(stats) {
+            const total = stats.total;
+            if (total === 0) {
+                return `<div class="chart-container">
+                    <svg viewBox="0 0 36 36" class="chart-svg">
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#333" stroke-width="4"/>
+                    </svg>
+                    <div class="chart-empty">暂无数据</div>
+                </div>`;
+            }
+            const colors = {
+                excellent: '#e74c3c',
+                good: '#f1c40f',
+                pass: '#2ecc71',
+                fail: '#3498db'
+            };
+            const labels = {
+                excellent: '优',
+                good: '良',
+                pass: '合',
+                fail: '不'
+            };
+            const order = ['excellent', 'good', 'pass', 'fail'];
+
+            let circles = `<circle cx="18" cy="18" r="15.9" fill="none" stroke="#2a2a2a" stroke-width="4"/>`;
+            let offset = 0;
+            const legends = [];
+
+            order.forEach(level => {
+                const count = stats[level];
+                if (count === 0) return;
+                const pct = (count / total) * 100;
+                circles += `<circle cx="18" cy="18" r="15.9" fill="none" stroke="${colors[level]}" stroke-width="4" stroke-dasharray="${pct} ${100 - pct}" stroke-dashoffset="${-offset}" transform="rotate(-90 18 18)"/>`;
+                offset += pct;
+                legends.push(`<span style="color:${colors[level]}">${labels[level]}${Math.round(pct)}%</span>`);
+            });
+
+            return `<div class="chart-container">
+                <svg viewBox="0 0 36 36" class="chart-svg">${circles}</svg>
+                <div class="chart-label">${legends.join('')}</div>
+            </div>`;
+        }
+
+        // ============================================================
+        //  构建列宽 colgroup（两个表格共用相同宽度）
+        // ============================================================
+        function buildColgroupHTML() {
+            let html = '';
+            html += '<col style="width: 50px;">';   // 序号
+            html += '<col style="width: 90px;">';   // 姓名
+            html += '<col style="width: 60px;">';   // 性别
+            html += '<col style="width: 70px;">';   // 身高
+            html += '<col style="width: 70px;">';   // 体重
+            html += '<col style="width: 70px;">';   // BMI
+            configs.forEach(() => { html += '<col>'; }); // 项目列（自动平分）
+            html += '<col style="width: 80px;">';   // 艺体汇总
+            html += '<col style="width: 50px;">';   // 操作
+            return html;
+        }
+
+        // ============================================================
+        //  ★ 单击序号 → 激活该行
+        // ============================================================
+        function toggleRowHighlight(rowIndex, event) {
+            if (event) event.stopPropagation();
+            if (activeRowIndex === rowIndex) {
+                activeRowIndex = -1;
+            } else {
+                activeRowIndex = rowIndex;
+            }
+            renderTable();
+        }
+
+        // ============================================================
+        //  渲染表格
+        // ============================================================
+        function renderTable() {
+            // ---- 列宽 ----
+            const colgroupHTML = buildColgroupHTML();
+            document.getElementById('chartsColgroup').innerHTML = colgroupHTML;
+            document.getElementById('dataColgroup').innerHTML = colgroupHTML;
+
+            // ---- 图表行 ----
+            const chartsRow = document.getElementById('chartsRow');
+            let chartsHtml = '';
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsHtml += `<th class="empty-cell"></th>`;
+            configs.forEach((config, idx) => {
+                const stats = calcProjectStats(idx);
+                chartsHtml += `<th>${makeDonutHTML(stats)}</th>`;
+            });
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsHtml += `<th class="empty-cell"></th>`;
+            chartsRow.innerHTML = chartsHtml;
+
+            // ---- 数据表格表头 ----
+            const head = document.getElementById('tableHead');
+            const body = document.getElementById('tableBody');
+            head.innerHTML = '';
+            body.innerHTML = '';
+
+            let headHtml = '<tr>';
+            headHtml += `<th class="col-index">序号</th>`;
+            headHtml += `<th onclick="sortBy('name')">姓名</th>`;
+            headHtml += `<th onclick="sortBy('gender')">性别</th>`;
+            headHtml += `<th onclick="sortBy('height')">身高(cm)</th>`;
+            headHtml += `<th onclick="sortBy('weight')">体重(kg)</th>`;
+            headHtml += `<th onclick="sortBy('bmi')">BMI</th>`;
+            configs.forEach((config, idx) => {
+                headHtml += `<th onclick="sortBy('proj_${idx}')" ondblclick="editProject(${idx})" title="单击排序，再次点击反向排序">${config.name}</th>`;
+            });
+            headHtml += `<th class="col-art" onclick="sortBy('artTotal')" title="单击排序：所有项目的等级分之和">🎯 艺体汇总</th>`;
+            headHtml += `<th class="col-del">操作</th>`;
+            headHtml += '</tr>';
+            head.innerHTML = headHtml;
+
+            // ---- 数据行 ----
+            rows.forEach((r, rowIndex) => {
+                const isActiveRow = (activeRowIndex === rowIndex);
+                let rowHtml = '<tr>';
+                // ★ 序号列可点击
+                rowHtml += `<td class="col-index clickable ${isActiveRow ? 'active' : ''}" data-row-index="${rowIndex}" onclick="toggleRowHighlight(${rowIndex}, event)" title="点击显示该行所有等级颜色">${rowIndex + 1}</td>`;
+                rowHtml += `<td>${r.name}</td>`;
+                rowHtml += `<td class="editable" onclick="toggleGender(${rowIndex})"><span class="${r.gender === '男' ? 'male' : 'female'}">${r.gender || '男'}</span></td>`;
+                
+                rowHtml += `<td class="editable" data-row-index="${rowIndex}" data-col-index="3" data-field="height" onclick="startEdit(${rowIndex}, 'height', this)">${r.height || '-'}</td>`;
+                rowHtml += `<td class="editable" data-row-index="${rowIndex}" data-col-index="4" data-field="weight" onclick="startEdit(${rowIndex}, 'weight', this)">${r.weight || '-'}</td>`;
+                rowHtml += `<td data-row-index="${rowIndex}" data-col-index="5">${r.bmi || '-'}</td>`;
+                
+                configs.forEach((config, idx) => {
+                    const fieldName = 'proj_' + idx;
+                    const value = r[fieldName];
+                    // ★ 两种情况显示等级颜色：1）表头排序的是这一列；2）当前行被激活（单击序号）
+                    const shouldShowGrade = (lastSortField === fieldName) || isActiveRow;
+                    const gradeClass = shouldShowGrade ? getGradeClass(value, config, r.gender) : '';
+                    const displayVal = value !== undefined && value !== '' ? value : '-';
+                    const colIndex = 6 + idx;
+                    rowHtml += `<td class="editable ${gradeClass}" data-row-index="${rowIndex}" data-col-index="${colIndex}" data-field="${fieldName}" onclick="startEdit(${rowIndex}, '${fieldName}', this)">${displayVal}</td>`;
+                });
+
+                const artTotal = calcArtScore(r);
+                const artDisplay = artTotal > 0 ? artTotal.toFixed(1) : '0.0';
+                rowHtml += `<td class="art-score-cell">${artDisplay}</td>`;
+
+                rowHtml += `<td class="col-del"><button class="del-row-btn" onclick="deleteRow(${rowIndex}, event)" title="删除此学生">🗑️</button></td>`;
+                rowHtml += '</tr>';
+                body.innerHTML += rowHtml;
+            });
+        }
+
+        function deleteRow(rowIndex, event) {
+            if (event) event.stopPropagation();
+            const r = rows[rowIndex];
+            if (!r) return;
+            if (!confirm(`确定要删除「${r.name}」吗？\n\n该学生的所有成绩都会被移除，此操作不可撤销。`)) return;
+            rows.splice(rowIndex, 1);
+            activeRowIndex = -1; // ★ 删除后行号变化，清空激活状态
+            saveRows();
+            renderTable();
+        }
+
+        function toggleGender(rowIndex) {
+            rows[rowIndex].gender = rows[rowIndex].gender === '男' ? '女' : '男';
+            saveRows(); renderTable();
+        }
+
+        function updateArtScoreCell(rowIndex) {
+            const r = rows[rowIndex];
+            const artTotal = calcArtScore(r);
+            const artDisplay = artTotal > 0 ? artTotal.toFixed(1) : '0.0';
+            const rowEl = document.querySelector(`td[data-row-index="${rowIndex}"][data-col-index="3"]`)?.parentElement;
+            if (rowEl) {
+                const artCell = rowEl.querySelector('.art-score-cell');
+                if (artCell) artCell.textContent = artDisplay;
+            }
+        }
+
+        function saveDataOnly(rowIndex, field, value) {
+            const r = rows[rowIndex];
+            const parsed = parseFloat(value);
+            r[field] = isNaN(parsed) ? '' : parsed;
+
+            if (field === 'height' || field === 'weight') {
+                const h = parseFloat(r.height) / 100;
+                const w = parseFloat(r.weight);
+                r.bmi = (h > 0 && w > 0) ? (w / (h * h)).toFixed(1) : '';
+                const bmiTd = document.querySelector(`td[data-row-index="${rowIndex}"][data-col-index="5"]`);
+                if (bmiTd) bmiTd.textContent = r.bmi || '-';
+            }
+
+            updateArtScoreCell(rowIndex);
+            saveRows();
+        }
+
+        function updateCellDisplay(td, rowIndex, field) {
+            const r = rows[rowIndex];
+            const displayVal = (r[field] === '' || r[field] === undefined || r[field] === null) ? '-' : r[field];
+            td.textContent = displayVal;
+
+            // ★ 更新等级颜色（如果这一列正在排序，或当前行被激活）
+            if (field.startsWith('proj_')) {
+                const shouldShow = (lastSortField === field) || (activeRowIndex === rowIndex);
+                if (shouldShow) {
+                    const idx = parseInt(field.replace('proj_', ''));
+                    const config = configs[idx];
+                    if (config) {
+                        const gradeClass = getGradeClass(r[field], config, r.gender);
+                        td.classList.remove('grade-excellent', 'grade-good', 'grade-pass', 'grade-fail');
+                        if (gradeClass) td.classList.add(gradeClass);
+                    }
+                }
+            }
+        }
+
+        function attachInputEvents(input, rowIndex, field, td) {
+            let saved = false;
+
+            input.addEventListener('blur', function() {
+                if (saved) return;
+                saved = true;
+                const r = rows[rowIndex];
+                const parsed = parseFloat(input.value);
+                r[field] = isNaN(parsed) ? '' : parsed;
+                if (field === 'height' || field === 'weight') {
+                    const h = parseFloat(r.height) / 100;
+                    const w = parseFloat(r.weight);
+                    r.bmi = (h > 0 && w > 0) ? (w / (h * h)).toFixed(1) : '';
+                }
+                saveRows();
+                renderTable();
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saved = true;
+                    const r = rows[rowIndex];
+                    const parsed = parseFloat(input.value);
+                    r[field] = isNaN(parsed) ? '' : parsed;
+                    if (field === 'height' || field === 'weight') {
+                        const h = parseFloat(r.height) / 100;
+                        const w = parseFloat(r.weight);
+                        r.bmi = (h > 0 && w > 0) ? (w / (h * h)).toFixed(1) : '';
+                    }
+                    saveRows();
+                    renderTable();
+                    return;
+                }
+
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+
+                    const curRow = parseInt(td.dataset.rowIndex);
+                    const curCol = parseInt(td.dataset.colIndex);
+                    let targetRow = curRow;
+                    let targetCol = curCol;
+                    let targetField = null;
+
+                    if (e.key === 'ArrowUp') {
+                        targetRow--;
+                    } else if (e.key === 'ArrowDown') {
+                        targetRow++;
+                    } else {
+                        const allEditable = Array.from(document.querySelectorAll(`td[data-row-index="${curRow}"][data-field]`));
+                        const curIdx = allEditable.indexOf(td);
+                        const dir = (e.key === 'ArrowLeft') ? -1 : 1;
+                        const newIdx = curIdx + dir;
+                        if (newIdx < 0 || newIdx >= allEditable.length) return;
+                        targetField = allEditable[newIdx].dataset.field;
+                        targetCol = parseInt(allEditable[newIdx].dataset.colIndex);
+                    }
+
+                    if (targetRow < 0 || targetRow >= rows.length) return;
+
+                    let newTd = null;
+                    if (targetField) {
+                        newTd = document.querySelector(`td[data-row-index="${targetRow}"][data-field="${targetField}"]`);
+                    } else {
+                        newTd = document.querySelector(`td[data-row-index="${targetRow}"][data-col-index="${targetCol}"]`);
+                    }
+                    if (!newTd || !newTd.dataset.field) return;
+
+                    saved = true;
+
+                    saveDataOnly(rowIndex, field, input.value);
+
+                    const newTargetRow = parseInt(newTd.dataset.rowIndex);
+                    const newTargetField = newTd.dataset.field;
+                    const newTargetVal = (rows[newTargetRow][newTargetField] !== undefined && rows[newTargetRow][newTargetField] !== '') ? rows[newTargetRow][newTargetField] : '';
+
+                    newTd.innerHTML = `<input type="number" step="any" value="${newTargetVal}" onfocus="this.select()">`;
+                    const newInput = newTd.querySelector('input');
+                    newInput.focus();
+                    newInput.select();
+
+                    attachInputEvents(newInput, newTargetRow, newTargetField, newTd);
+
+                    updateCellDisplay(td, rowIndex, field);
+                }
+            });
+        }
+
+        function startEdit(rowIndex, field, td) {
+            const r = rows[rowIndex];
+            const currentVal = r[field] !== undefined && r[field] !== '' ? r[field] : '';
+            
+            td.innerHTML = `<input type="number" step="any" value="${currentVal}" onfocus="this.select()">`;
+            const input = td.querySelector('input');
+            input.focus();
+            input.select();
+
+            attachInputEvents(input, rowIndex, field, td);
+        }
+
+        function sortBy(field) {
+            // ★ 排序时清空激活行，避免行内容跳动后颜色错位
+            activeRowIndex = -1;
+
+            let direction = 1;
+            if (lastSortField === field) direction = -lastSortDirection;
+            else direction = 1;
+            lastSortField = field;
+            lastSortDirection = direction;
+
+            if (field === 'artTotal') {
+                rows.forEach(r => { r._artTotal = calcArtScore(r); });
+                rows.sort((a, b) => (a._artTotal - b._artTotal) * direction);
+                rows.forEach(r => { delete r._artTotal; });
+                renderTable();
+                return;
+            }
+
+            rows.sort((a, b) => {
+                if (field === 'name' || field === 'gender') {
+                    let va = field === 'name' ? a.name : (a.gender || '');
+                    let vb = field === 'name' ? b.name : (b.gender || '');
+                    return va.localeCompare(vb, 'zh-CN') * direction;
+                }
+                let rawA = a[field], rawB = b[field];
+                let hasA = rawA !== undefined && rawA !== null && rawA !== '' && !isNaN(parseFloat(rawA));
+                let hasB = rawB !== undefined && rawB !== null && rawB !== '' && !isNaN(parseFloat(rawB));
+                if (hasA && !hasB) return -1;
+                if (!hasA && hasB) return 1;
+                if (!hasA && !hasB) return 0;
+                return (parseFloat(rawA) - parseFloat(rawB)) * direction;
+            });
+            renderTable();
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const extension = file.name.split('.').pop().toLowerCase();
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    function parseCSVLine(line) {
+                        const result = [];
+                        let cur = '', inQuotes = false;
+                        for (let i = 0; i < line.length; i++) {
+                            const ch = line[i];
+                            if (ch === '"') {
+                                if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+                                else inQuotes = !inQuotes;
+                            } else if (ch === ',' && !inQuotes) {
+                                result.push(cur); cur = '';
+                            } else cur += ch;
+                        }
+                        result.push(cur);
+                        return result.map(s => s.trim());
+                    }
+
+                    if (extension === 'json') {
+                        const data = JSON.parse(e.target.result);
+                        if (data.configs && Array.isArray(data.configs)) configs = data.configs;
+                        if (data.rows && Array.isArray(data.rows)) rows = data.rows;
+                        if (data.gradeScores && typeof data.gradeScores === 'object') {
+                            gradeScores = { ...gradeScores, ...data.gradeScores };
+                            saveGradeScores();
+                        }
+                        configs.forEach(c => {
+                            if (!c.direction) c.direction = 'desc';
+                            if (c.pass !== undefined && c.passMale === undefined) {
+                                c.passMale = c.pass; c.goodMale = c.good; c.excellentMale = c.excellent;
+                                c.passFemale = c.pass; c.goodFemale = c.good; c.excellentFemale = c.excellent;
+                            }
+                        });
+                        activeRowIndex = -1;
+                        saveConfigs(); saveRows(); renderTable();
+                        alert('✅ JSON备份导入成功！');
+                        return;
+                    }
+
+                    if (extension !== 'csv') { alert('❌ 仅支持 .csv 或 .json 文件！'); return; }
+
+                    const text = e.target.result.replace(/^\uFEFF/, '');
+                    const lines = text.split('\n').filter(line => line.trim());
+                    if (lines.length < 2) { alert('❌ CSV文件内容无效！'); return; }
+
+                    const headers = parseCSVLine(lines[0]);
+                    const nameIdx = headers.findIndex(h => h.includes('姓名'));
+                    if (nameIdx === -1) { alert('❌ CSV缺少"姓名"列！'); return; }
+
+                    const genderIdx = headers.findIndex(h => h.includes('性别'));
+                    const heightIdx = headers.findIndex(h => h.includes('身高'));
+                    const weightIdx = headers.findIndex(h => h.includes('体重'));
+                    const bmiIdx = headers.findIndex(h => h.includes('BMI') || h.includes('bmi'));
+                    const indexColIdx = headers.findIndex(h => h === '序号' || h.includes('序号'));
+                    const artIdx = headers.findIndex(h => h.includes('艺体汇总'));
+
+                    const standardSet = new Set([nameIdx, genderIdx, heightIdx, weightIdx, bmiIdx, indexColIdx, artIdx].filter(i => i !== -1));
+                    const projCols = [];
+                    headers.forEach((h, i) => {
+                        if (!standardSet.has(i) && h && h.trim() !== '') {
+                            projCols.push({ name: h.trim(), colIdx: i });
+                        }
+                    });
+
+                    if (projCols.length > 0) {
+                        const newConfigs = [];
+                        projCols.forEach(pc => {
+                            let existing = configs.find(c => c.name === pc.name);
+                            newConfigs.push(existing || {
+                                name: pc.name,
+                                passMale: 0, goodMale: 0, excellentMale: 0,
+                                passFemale: 0, goodFemale: 0, excellentFemale: 0,
+                                direction: 'desc'
+                            });
+                        });
+                        configs = newConfigs;
+                    }
+
+                    let addedCount = 0, updatedCount = 0;
+
+                    for (let i = 1; i < lines.length; i++) {
+                        const cols = parseCSVLine(lines[i]);
+                        const stuName = cols[nameIdx] ? cols[nameIdx].trim() : '';
+                        if (!stuName) continue;
+
+                        let r = rows.find(x => x.name === stuName);
+                        if (!r) {
+                            r = { name: stuName, gender: '男', height: '', weight: '', bmi: '' };
+                            rows.push(r);
+                            addedCount++;
+                        } else {
+                            updatedCount++;
+                        }
+
+                        if (genderIdx !== -1 && cols[genderIdx]) r.gender = cols[genderIdx];
+                        if (heightIdx !== -1 && cols[heightIdx] !== '') r.height = parseFloat(cols[heightIdx]) || '';
+                        if (weightIdx !== -1 && cols[weightIdx] !== '') r.weight = parseFloat(cols[weightIdx]) || '';
+
+                        const h = parseFloat(r.height) / 100;
+                        const w = parseFloat(r.weight);
+                        r.bmi = (h > 0 && w > 0) ? (w / (h * h)).toFixed(1) : '';
+
+                        if (projCols.length > 0) {
+                            projCols.forEach((pc, idx) => {
+                                const val = cols[pc.colIdx];
+                                r['proj_' + idx] = (val !== undefined && val !== '') ? (parseFloat(val) || '') : '';
+                            });
+                        }
+                    }
+
+                    activeRowIndex = -1;
+                    saveConfigs(); saveRows(); renderTable();
+
+                    let msg = `✅ CSV导入成功！\n\n`;
+                    msg += `📄 新增：${addedCount} 人\n`;
+                    msg += `🔄 更新：${updatedCount} 人\n`;
+                    if (projCols.length > 0) msg += `📊 项目：${projCols.map(p => p.name).join('、')}\n`;
+                    alert(msg);
+                } catch (err) {
+                    console.error(err);
+                    alert('❌ 导入失败：' + err.message);
+                }
+            };
+            reader.readAsText(file, 'utf-8');
+            event.target.value = '';
+        }
+
+        function exportCSV() {
+            if (rows.length === 0) { alert('暂无数据可导出！'); return; }
+            let headers = ['序号', '姓名', '性别', '身高(cm)', '体重(kg)', 'BMI'];
+            configs.forEach(c => headers.push(c.name));
+            headers.push('艺体汇总');
+            let rowsData = [];
+            rows.forEach((r, idx) => {
+                let row = [idx + 1, r.name, r.gender || '', r.height || '', r.weight || '', r.bmi || ''];
+                configs.forEach((c, i) => { row.push(r['proj_' + i] !== undefined ? r['proj_' + i] : ''); });
+                row.push(calcArtScore(r).toFixed(1));
+                rowsData.push(row);
+            });
+            let csvContent = '\uFEFF' + headers.join(',') + '\n';
+            rowsData.forEach(row => {
+                let safeRow = row.map(cell => {
+                    let str = String(cell).replace(/"/g, '""');
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str}"`;
+                    return str;
+                });
+                csvContent += safeRow.join(',') + '\n';
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 10);
+            link.href = URL.createObjectURL(blob);
+            link.download = `体测数据_${CURRENT_CLASS}_${date}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function exportJSON() {
+            if (rows.length === 0 && configs.length === 0) { alert('暂无数据可导出！'); return; }
+            const backup = {
+                currentClass: CURRENT_CLASS,
+                exportTime: new Date().toISOString(),
+                configs: configs,
+                rows: rows,
+                gradeScores: gradeScores
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const link = document.createElement('a');
+            const date = new Date().toISOString().slice(0, 10);
+            link.href = URL.createObjectURL(blob);
+            link.download = `体测备份_${CURRENT_CLASS}_${date}.json`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function openProjectModal() {
+            document.getElementById('scoreExcellent').value = gradeScores.excellent;
+            document.getElementById('scoreGood').value = gradeScores.good;
+            document.getElementById('scorePass').value = gradeScores.pass;
+            document.getElementById('scoreFail').value = gradeScores.fail;
+            
+            renderProjectList();
+            resetEditArea();
+            document.getElementById('projectModal').classList.add('active');
+        }
+        function closeProjectModal() {
+            const exc = parseFloat(document.getElementById('scoreExcellent').value);
+            const good = parseFloat(document.getElementById('scoreGood').value);
+            const pass = parseFloat(document.getElementById('scorePass').value);
+            const fail = parseFloat(document.getElementById('scoreFail').value);
+            if (!isNaN(exc)) gradeScores.excellent = exc;
+            if (!isNaN(good)) gradeScores.good = good;
+            if (!isNaN(pass)) gradeScores.pass = pass;
+            if (!isNaN(fail)) gradeScores.fail = fail;
+            saveGradeScores();
+            renderTable();
+            
+            document.getElementById('projectModal').classList.remove('active');
+        }
+        function renderProjectList() {
+            const listContainer = document.getElementById('projectListContainer');
+            listContainer.innerHTML = '';
+            configs.forEach((config, idx) => {
+                const div = document.createElement('div');
+                div.className = 'project-item';
+                div.innerHTML = `
+                    <div class="info">${config.name} (男:${config.passMale}/${config.goodMale}/${config.excellentMale} 女:${config.passFemale}/${config.goodFemale}/${config.excellentFemale})</div>
+                    <div class="actions">
+                        <button class="edit-btn" onclick="editProject(${idx})">✏️ 编辑</button>
+                        <button class="del-btn" onclick="deleteProject(${idx})">🗑️ 删除</button>
+                    </div>
+                `;
+                listContainer.appendChild(div);
+            });
+        }
+        function resetEditArea() {
+            document.getElementById('editProjectId').value = '';
+            document.getElementById('projectName').value = '';
+            document.getElementById('projectPassMale').value = '';
+            document.getElementById('projectGoodMale').value = '';
+            document.getElementById('projectExcellentMale').value = '';
+            document.getElementById('projectPassFemale').value = '';
+            document.getElementById('projectGoodFemale').value = '';
+            document.getElementById('projectExcellentFemale').value = '';
+            document.getElementById('projectDirection').value = 'desc';
+            document.getElementById('deleteProjectBtn').style.display = 'none';
+            document.getElementById('editAreaTitle').textContent = '➕ 新增项目';
+        }
+        function editProject(index) {
+            const config = configs[index];
+            document.getElementById('editProjectId').value = index;
+            document.getElementById('projectName').value = config.name;
+            document.getElementById('projectPassMale').value = config.passMale;
+            document.getElementById('projectGoodMale').value = config.goodMale;
+            document.getElementById('projectExcellentMale').value = config.excellentMale;
+            document.getElementById('projectPassFemale').value = config.passFemale;
+            document.getElementById('projectGoodFemale').value = config.goodFemale;
+            document.getElementById('projectExcellentFemale').value = config.excellentFemale;
+            document.getElementById('projectDirection').value = config.direction;
+            document.getElementById('deleteProjectBtn').style.display = 'none';
+            document.getElementById('editAreaTitle').textContent = '✏️ 修改项目：' + config.name;
+        }
+        function saveProject() {
+            const name = document.getElementById('projectName').value.trim();
+            const passMale = parseFloat(document.getElementById('projectPassMale').value);
+            const goodMale = parseFloat(document.getElementById('projectGoodMale').value);
+            const excellentMale = parseFloat(document.getElementById('projectExcellentMale').value);
+            const passFemale = parseFloat(document.getElementById('projectPassFemale').value);
+            const goodFemale = parseFloat(document.getElementById('projectGoodFemale').value);
+            const excellentFemale = parseFloat(document.getElementById('projectExcellentFemale').value);
+            const direction = document.getElementById('projectDirection').value;
+            if (!name) { alert("请输入项目名称！"); return; }
+            const idx = document.getElementById('editProjectId').value;
+            const newConfig = { name, passMale, goodMale, excellentMale, passFemale, goodFemale, excellentFemale, direction };
+            if (idx === '') { configs.push(newConfig); }
+            else { configs[parseInt(idx)] = newConfig; }
+            activeRowIndex = -1;
+            saveConfigs(); renderProjectList(); resetEditArea(); renderTable();
+        }
+        function deleteProject(index) {
+            if (index === undefined) {
+                const idx = document.getElementById('editProjectId').value;
+                if (idx === '') return;
+                index = parseInt(idx);
+            }
+            if (!confirm('确定要删除该项目吗？相关成绩将丢失！')) return;
+            if (index >= 0 && index < configs.length) {
+                configs.splice(index, 1);
+                rows.forEach(r => { delete r['proj_' + index]; });
+                activeRowIndex = -1;
+                saveConfigs(); saveRows();
+            }
+            renderProjectList(); resetEditArea(); renderTable();
+        }
+
+        loadConfigs();
+        loadGradeScores();
+        loadRows();
+        renderTable();
+    </script>
+</body>
+</html>
