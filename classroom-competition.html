@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="icon" type="image/svg+xml" href="logo.svg">
-    <title>⚔️ 竞技课堂</title>
+    <title>⚔️ 擂台赛</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
         body { font-family: 'Microsoft YaHei', sans-serif; background: #0b1a2a; color: #fff; padding: 16px; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
@@ -313,7 +313,7 @@
 <body>
 <div class="app">
     <div class="header">
-        <h1>🏆 竞技课堂</h1>
+        <h1>🏆 擂台赛</h1>
 
         <div class="mode-group">
             <button class="active" data-mode="quiz">⚡ 抢答</button>
@@ -655,7 +655,7 @@
             });
             groups = Array.from(groupSet).sort((a,b) => a.localeCompare(b, 'zh-CN'));
             if (groups.length < 2) {
-                alert('⚠️ 至少需要两个小组才能进行竞技课堂。请先在座次表创建小组。');
+                alert('⚠️ 至少需要两个小组才能进行擂台赛。请先在座次表创建小组。');
                 return false;
             }
             groupSloganMap = DataManager.loadGroupSloganMap(CURRENT_CLASS) || {};
