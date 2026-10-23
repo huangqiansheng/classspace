@@ -2,7 +2,7 @@
   "name": "班级空间",
   "short_name": "班级空间",
   "description": "本站旨在为新人教师，尤其是新人班主任，在任教初期，提供一个切实可行，稳定有效的班级管理手段。",
-  "start_url": "./index.html",
+  "start_url": "./home.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
