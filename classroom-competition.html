@@ -1054,6 +1054,7 @@
 
         let scoringFocusIndex = 0;
 
+        // ★★★ 核心修改区：评分弹窗逻辑 ★★★
         function showScoreModal() {
             const modal = document.getElementById('scoreModal');
             const rowsContainer = document.getElementById('scoreRows');
@@ -1063,6 +1064,8 @@
 
             tempScores = {};
             const isQuiz = state.mode === 'quiz';
+            
+            // 保留原本的默认逻辑：抢答默认0，板演默认排号
             selected.forEach(s => {
                 const student = students.find(st => st.id === s.id);
                 const full = student ? student.seatOrder || 0 : 0;
@@ -1070,8 +1073,8 @@
             });
 
             document.getElementById('scoreSub').textContent = isQuiz ?
-                '抢答模式：点击 +1 加分，上限为排号' :
-                '板演模式：点击 −1 扣分，下限为 0';
+                '抢答模式：默认 0 分，点击 + 可无限加分，点击 − 最低扣至 0' :
+                '板演模式：默认排号分，点击 + 可突破排号继续加分，点击 − 最低扣至 0';
 
             selected.forEach(s => {
                 const student = students.find(st => st.id === s.id);
@@ -1080,31 +1083,51 @@
                 row.className = 'score-row';
                 row.dataset.studentId = s.id;
                 const current = tempScores[s.id];
-                const btnLabel = isQuiz ? '+1' : '−1';
-                const action = isQuiz ? 'add' : 'sub';
+                
+                // 同时渲染 + 和 - 按钮
                 row.innerHTML = `
                     <div class="info">
                         <span class="name">${s.name} <span class="group-tag">${s.group}</span></span>
-                        <div class="full">排号：${full}</div>
+                        <div class="full">参考排号：${full}</div>
                     </div>
-                    <span class="current-score" id="scoreDisplay_${s.id}">${current.toFixed(1)}</span>
-                    <button class="adjust-btn" data-id="${s.id}" data-action="${action}" data-full="${full}">${btnLabel}</button>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="adjust-btn" data-id="${s.id}" data-action="sub" style="background:#e74c3c; padding:2px 12px;">−</button>
+                        <span class="current-score" id="scoreDisplay_${s.id}">${current.toFixed(1)}</span>
+                        <button class="adjust-btn" data-id="${s.id}" data-action="add" style="background:#2ecc71; padding:2px 12px;">+</button>
+                    </div>
                 `;
                 rowsContainer.appendChild(row);
+                
+                // 初始化时如果分数是0，禁用减号
+                if (current <= 0) {
+                    setTimeout(() => {
+                        const subBtn = document.querySelector(`.adjust-btn[data-id="${s.id}"][data-action="sub"]`);
+                        if (subBtn) subBtn.disabled = true;
+                    }, 0);
+                }
             });
 
             rowsContainer.querySelectorAll('.adjust-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const id = parseInt(this.dataset.id);
-                    const full = parseInt(this.dataset.full);
                     const action = this.dataset.action;
                     let current = tempScores[id];
+                    
                     if (action === 'add') {
-                        if (current < full) { tempScores[id] += 1; document.getElementById('scoreDisplay_' + id).textContent = tempScores[id].toFixed(1); if (tempScores[id] >= full) this.disabled = true; }
-                        else alert('已达到上限（排号）');
+                        // 无限加分
+                        tempScores[id] += 1;
+                        document.getElementById('scoreDisplay_' + id).textContent = tempScores[id].toFixed(1);
+                        
+                        // 只要加分了，确保减号恢复可用
+                        const subBtn = document.querySelector(`.adjust-btn[data-id="${id}"][data-action="sub"]`);
+                        if (subBtn) subBtn.disabled = false;
                     } else {
-                        if (current > 0) { tempScores[id] -= 1; document.getElementById('scoreDisplay_' + id).textContent = tempScores[id].toFixed(1); if (tempScores[id] <= 0) this.disabled = true; }
-                        else alert('已达到最低 0 分');
+                        // 扣分，最低0分
+                        if (current > 0) { 
+                            tempScores[id] -= 1; 
+                            document.getElementById('scoreDisplay_' + id).textContent = tempScores[id].toFixed(1); 
+                            if (tempScores[id] <= 0) this.disabled = true; 
+                        }
                     }
                 });
             });
@@ -1118,6 +1141,7 @@
                 highlightOption();
             }
         }
+        // ★★★ 核心修改区结束 ★★★
 
         function updateScoringHighlight() {
             const rows = document.querySelectorAll('#scoreModal .score-row');
