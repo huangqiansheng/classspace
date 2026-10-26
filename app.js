@@ -165,6 +165,22 @@ function updateSubjectRanks() {
     } else {
         subjectRanks = calcRanksRelative(items, rankingTotalCount);
     }
+
+    // ★★★ 新增：将计算出的最新排号，同步写回每个学生的 seatOrder，并保存！ ★★★
+    let needSave = false;
+    students.forEach(s => {
+        const newRank = subjectRanks[s.id];
+        if (newRank !== undefined && s.seatOrder !== newRank) {
+            s.seatOrder = newRank;
+            needSave = true;
+        }
+    });
+    
+    // 只有排号发生变化时才触发保存，避免频繁写入本地存储
+    if (needSave) {
+        saveToLocal();
+    }
+    // ★★★ 新增结束 ★★★
 }
 
 function updateRankingUIBar() {
@@ -933,6 +949,7 @@ function updateSidePanels(studentId, keepDelta = false) {
             if (!studentScoreDelta[idx]) studentScoreDelta[idx] = 0;
             studentScoreDelta[idx] += delta;
             recalcAll();
+            updateSubjectRanks(); // 确保分数变动后排号实时重算
             updateSidePanels(studentId, true);
             const seat = document.querySelector(`.seat[data-student-id='${student.id}']`);
             if (seat) {
@@ -1049,7 +1066,7 @@ function updateSubjectScore(studentId, sub, value, oldValue) {
     if (!subjectScoreDelta[sub]) subjectScoreDelta[sub] = 0;
     subjectScoreDelta[sub] += (newVal - oldVal);
     recalcAll();
-    updateSubjectRanks();
+    updateSubjectRanks(); // 确保学科分数变动后排号实时重算
     render();
     showFloatToast(`${student.name} ${sub} ${oldVal.toFixed(1)}→${newVal.toFixed(1)}`);
     saveToLocal();
@@ -1212,6 +1229,7 @@ function handleMultiDrop(ids, targetIndex) {
 function handlePodiumDrop(targetIndex) { const total = COLS * ROWS; if (targetIndex < 0 || targetIndex >= total) return; const col = targetIndex % COLS; if (col > COLS - PODIUM_WIDTH) return; const hasSeat = (idx) => students.some(s => s.gridIndex === idx); if (hasSeat(targetIndex) || hasSeat(targetIndex + 1)) return; if (targetIndex === podiumStartIndex) return; podiumStartIndex = targetIndex; render(); showFloatToast('🏫 讲台已移动'); }
 
 function render() {
+    updateSubjectRanks(); // ★★★ 新增：每次渲染前，强制同步并保存一次最新排号 ★★★
     recalcAll(); 
     groups = buildGroups();
     students.forEach(s => { if(!s.animal) s.animal='🐱'; if(!s.petState) s.petState='normal'; });
@@ -1373,6 +1391,7 @@ function multiSelectAdjust(dimIdx, delta) {
     }
     saveDailySnapshot();
     recalcAll();
+    updateSubjectRanks(); // 同步排号
     saveToLocal();
     render();
     if (applied > 0) showFloatToast('已对 ' + applied + ' 人 ' + (delta > 0 ? '+' : '') + delta + ' ' + CATEGORIES[dimIdx]);
@@ -1394,7 +1413,7 @@ function multiSelectAdjustSubject(sub, newAvgStr, oldAvgStr) {
     multiSelectSubjectDeltas[sub] += delta;
     saveDailySnapshot();
     recalcAll();
-    updateSubjectRanks();
+    updateSubjectRanks(); // 同步排号
     saveToLocal();
     render();
     showFloatToast('已对 ' + selected.length + ' 人 ' + sub + ' ' + (delta > 0 ? '+' : '') + delta.toFixed(1));
