@@ -604,6 +604,9 @@
                     state.history = saved.history || [];
                     state.classStartSpeech = '欢迎来到数学课堂！';
                     state.used = saved.used || {};
+                    // ★ 修复：读取保存的本节课加分
+                    state.personScores = saved.personScores || {}; 
+                    
                     state.groupScores = {};
                     state.selectedStudents = [];
                     state.isClassOn = false;
@@ -629,6 +632,8 @@
                     history: state.history,
                     classStartSpeech: state.classStartSpeech,
                     used: state.used,
+                    // ★ 修复：把本节课加分实时保存到本地，刷新不丢失
+                    personScores: state.personScores 
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             } catch(e) { console.warn('保存课堂状态失败', e); }
@@ -710,12 +715,14 @@
                 state.isClassOn = false;
                 state.isTimerRunning = false;
                 state.remainingSeconds = 0;
-                saveState();
+                
+                // ★ 修复：确保没有丢失的分数被初始化
+                students.forEach(s => {
+                    if (state.personScores[s.id] === undefined) {
+                        state.personScores[s.id] = 0;
+                    }
+                });
             }
-            state.personScores = {};
-            students.forEach(s => {
-                state.personScores[s.id] = 0;
-            });
             document.getElementById('roundBadge').textContent = '🔄 第 ' + state.round + ' 轮';
             updateClassStatus();
             renderAll();
@@ -1310,7 +1317,7 @@
             state.round += 1;
             state.selectedStudents = [];
 
-            saveState();
+            saveState(); // ★ 确保这里保存
             closeScoreModal();
             renderAll();
             updateButtons();
@@ -1328,21 +1335,37 @@
             document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
         }
 
+        // ★ 修复：彻底重写同步逻辑，绝不覆盖原有分数，且强类型匹配
         function syncScoresToSeat() {
-            if (!students.length) return;
+            if (!state.personScores || Object.keys(state.personScores).length === 0) return;
+            
             const classData = DataManager.loadClassData(CURRENT_CLASS);
-            if (!classData) return;
-            students.forEach(s => {
-                const addScore = state.personScores[s.id] || 0;
-                if (addScore !== 0) {
-                    s.cats[3] = (s.cats[3] || 0) + addScore;
-                    const target = classData.students.find(d => d.id === s.id);
-                    if (target) {
-                        target.cats[3] = s.cats[3];
-                    }
+            if (!classData || !classData.students) return;
+            
+            let hasSynced = false;
+            let syncCount = 0;
+
+            // 遍历所有有加分的 ID（使用 Object.keys 确保连字符串 ID 也能抓到）
+            Object.keys(state.personScores).forEach(idStr => {
+                const addScore = state.personScores[idStr];
+                if (addScore === 0) return;
+
+                // 找对应的学生对象（注意强转为 String 匹配，防止类型导致匹配失败）
+                const target = classData.students.find(d => String(d.id) === String(idStr));
+                if (target) {
+                    if (!target.cats) target.cats = [0,0,0,0,0,0,0,0,0,0];
+                    // ★ 核心修复：直接在原有分数上累加，绝不覆盖旧数据
+                    target.cats[3] = (target.cats[3] || 0) + addScore; 
+                    hasSynced = true;
+                    syncCount++;
                 }
             });
-            DataManager.saveClassData(classData, CURRENT_CLASS);
+            
+            if (hasSynced) {
+                DataManager.saveClassData(classData, CURRENT_CLASS);
+                // 强烈提示，证明同步逻辑已经跑通
+                showFloatToast(`✅ 已将 ${syncCount} 名学生的加分同步到“学习”项`);
+            }
         }
 
         function getTopGroupAndStudent() {
@@ -1391,6 +1414,8 @@
             } else {
                 if (state.isTimerRunning) stopTimer();
                 const { topGroup, topGroupScore, topStudent, topStudentScore } = getTopGroupAndStudent();
+                
+                // ★ 调用修复后的同步逻辑
                 syncScoresToSeat();
 
                 state.groupScores = {};
