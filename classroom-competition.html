@@ -704,10 +704,21 @@
             } else {
                 if (!groups.includes(state.defender)) state.defender = groups[0];
                 if (!groups.includes(state.challenger)) state.challenger = groups[1];
-                if (!Array.isArray(state.challengerQueue) || state.challengerQueue.length === 0) resetChallengerQueue();
-                if (!state.challengerQueue.includes(state.challenger) || state.eliminatedGroups.includes(state.challenger)) {
+                
+                // ★ 修复核心：只要当前攻擂组合法，就不要无端把他顺延掉！
+                if (state.challenger === state.defender || state.eliminatedGroups.includes(state.challenger)) {
                     state.challenger = getNextChallenger();
                 }
+
+                // 重建挑战队列，确保队列里排除了当前的守擂组和攻擂组
+                resetChallengerQueue();
+                state.challengerQueue = state.challengerQueue.filter(g => g !== state.challenger);
+                if (state.challengerQueue.length === 0) {
+                    state.eliminatedGroups = state.eliminatedGroups.filter(g => g === state.defender);
+                    resetChallengerQueue();
+                    state.challengerQueue = state.challengerQueue.filter(g => g !== state.challenger);
+                }
+
                 students.forEach(s => { if (state.used[s.id] === undefined) state.used[s.id] = false; });
                 state.groupScores = {};
                 groups.forEach(g => state.groupScores[g] = 0);
@@ -716,7 +727,7 @@
                 state.isTimerRunning = false;
                 state.remainingSeconds = 0;
                 
-                // ★ 修复：确保没有丢失的分数被初始化
+                // 确保没有丢失的分数被初始化
                 students.forEach(s => {
                     if (state.personScores[s.id] === undefined) {
                         state.personScores[s.id] = 0;
@@ -1317,7 +1328,7 @@
             state.round += 1;
             state.selectedStudents = [];
 
-            saveState(); // ★ 确保这里保存
+            saveState();
             closeScoreModal();
             renderAll();
             updateButtons();
@@ -1335,38 +1346,48 @@
             document.getElementById('statusText').textContent = '📌 选择模式（上下切换，双击↓确认）';
         }
 
-        // ★ 修复：彻底重写同步逻辑，绝不覆盖原有分数，且强类型匹配
+        // ★★★ 核心修改区：同步数据到座次表 ★★★
         function syncScoresToSeat() {
             if (!state.personScores || Object.keys(state.personScores).length === 0) return;
             
-            const classData = DataManager.loadClassData(CURRENT_CLASS);
-            if (!classData || !classData.students) return;
-            
-            let hasSynced = false;
-            let syncCount = 0;
-
-            // 遍历所有有加分的 ID（使用 Object.keys 确保连字符串 ID 也能抓到）
-            Object.keys(state.personScores).forEach(idStr => {
-                const addScore = state.personScores[idStr];
-                if (addScore === 0) return;
-
-                // 找对应的学生对象（注意强转为 String 匹配，防止类型导致匹配失败）
-                const target = classData.students.find(d => String(d.id) === String(idStr));
-                if (target) {
-                    if (!target.cats) target.cats = [0,0,0,0,0,0,0,0,0,0];
-                    // ★ 核心修复：直接在原有分数上累加，绝不覆盖旧数据
-                    target.cats[3] = (target.cats[3] || 0) + addScore; 
-                    hasSynced = true;
-                    syncCount++;
+            // 组装要同步的数据
+            const scoresToSync = [];
+            Object.keys(state.personScores).forEach(id => {
+                const val = state.personScores[id];
+                if (val !== 0) {
+                    scoresToSync.push({ id: id, value: val });
                 }
             });
-            
-            if (hasSynced) {
-                DataManager.saveClassData(classData, CURRENT_CLASS);
-                // 强烈提示，证明同步逻辑已经跑通
-                showFloatToast(`✅ 已将 ${syncCount} 名学生的加分同步到“学习”项`);
+
+            if (scoresToSync.length > 0) {
+                // 调用数据总线的万能接口：同步到十维的第3项（学习），累加模式
+                if (typeof DataManager.syncToSeat === 'function') {
+                    const res = DataManager.syncToSeat(scoresToSync, 'cats', 3, 'add', CURRENT_CLASS);
+                    if (res.success > 0) {
+                        showFloatToast(`✅ 已将 ${res.success} 名学生的加分同步到“学习”项`);
+                    }
+                } else {
+                    // 兜底逻辑（如果用户还没更新 dataManager.js）
+                    const classData = DataManager.loadClassData(CURRENT_CLASS);
+                    if (classData && classData.students) {
+                        let count = 0;
+                        scoresToSync.forEach(item => {
+                            const target = classData.students.find(d => String(d.id) === String(item.id));
+                            if (target) {
+                                if (!target.cats) target.cats = [0,0,0,0,0,0,0,0,0,0];
+                                target.cats[3] = (target.cats[3] || 0) + item.value;
+                                count++;
+                            }
+                        });
+                        if (count > 0) {
+                            DataManager.saveClassData(classData, CURRENT_CLASS);
+                            showFloatToast(`✅ 已将 ${count} 名学生的加分同步到“学习”项`);
+                        }
+                    }
+                }
             }
         }
+        // ★★★ 核心修改区结束 ★★★
 
         function getTopGroupAndStudent() {
             let topGroup = null, topGroupScore = -Infinity;
@@ -1415,7 +1436,7 @@
                 if (state.isTimerRunning) stopTimer();
                 const { topGroup, topGroupScore, topStudent, topStudentScore } = getTopGroupAndStudent();
                 
-                // ★ 调用修复后的同步逻辑
+                // 下课动作：触发同步
                 syncScoresToSeat();
 
                 state.groupScores = {};
